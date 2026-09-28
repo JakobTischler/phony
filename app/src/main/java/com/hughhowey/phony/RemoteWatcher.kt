@@ -104,6 +104,7 @@ class RemoteWatcher(private val ctx: Context) {
             .put("dur", if (dur > 0) dur else 0)
             .put("pos", pos.coerceAtLeast(0))
             .put("playing", playing)
+            .put("queueTitle", try { c.queueTitle?.toString() ?: "" } catch (e: Exception) { "" })
             .put("artKey", artKey)
             .put("hasArt", art != null)
             .put("queue", queue)

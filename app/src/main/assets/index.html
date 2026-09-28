@@ -52,7 +52,7 @@ button{-webkit-tap-highlight-color:transparent}
 .brushed{background-image:
   repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px),
   repeating-linear-gradient(90deg,rgba(0,0,0,.05) 0 2px,transparent 2px 7px)}
-.top{position:relative;height:22cqw;flex:none;background-color:var(--anodized-lo);border-bottom:.5cqw solid #14255a;box-shadow:inset 0 -1px 0 rgba(255,255,255,.15)}
+.top{position:relative;height:17cqw;flex:none;background-color:var(--anodized-lo);border-bottom:.5cqw solid #14255a;box-shadow:inset 0 -1px 0 rgba(255,255,255,.15)}
 .top .row{position:absolute;left:7cqw;right:6cqw;top:4.2cqw;display:flex;align-items:center;justify-content:space-between}
 .fxkey{position:relative;width:13cqw;height:5.2cqw;border:0;border-radius:1cqw;background:linear-gradient(180deg,#ffc15a,var(--orange) 55%,#d97f06);box-shadow:0 1.1cqw 0 #9a5a05,0 1.6cqw 1.6cqw rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.6);cursor:pointer;transition:transform .05s,box-shadow .05s}
 .fxkey::after{content:"";position:absolute;inset:1.1cqw 2cqw;background:repeating-linear-gradient(90deg,rgba(120,60,0,.25) 0 .5cqw,transparent .5cqw 1.1cqw);border-radius:.4cqw}
@@ -66,7 +66,7 @@ button{-webkit-tap-highlight-color:transparent}
 .jack{display:flex;flex-direction:column;align-items:center;gap:.8cqw;font-family:var(--f-device);font-size:1.7cqw;color:rgba(222,230,244,.75)}
 .jack i{display:block;width:4.6cqw;height:4.6cqw;border-radius:50%;background:radial-gradient(circle,#050608 36%,#3b3f46 38%,#c9a960 44%,#8a6d2f 60%,#1a1c20 64%)}
 .brand{position:absolute;left:6.6cqw;top:9.4cqw;font-family:var(--f-brand);font-weight:700;font-size:8cqw;line-height:1;letter-spacing:.07em;color:#eef2f8;text-shadow:0 -1px 0 rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.12)}
-.model{position:absolute;left:7cqw;top:17.8cqw;font-family:var(--f-device);font-size:2.05cqw;letter-spacing:.2em;color:rgba(222,230,244,.72)}
+.model{position:absolute;left:7cqw;top:12.2cqw;font-family:var(--f-device);font-size:2.05cqw;letter-spacing:.2em;color:rgba(222,230,244,.72)}
 .top.slim{height:21cqw}
 .top.slim .brand{top:10.6cqw;font-size:7cqw}
 .top.slim .model{top:auto;bottom:3.2cqw;left:auto;right:6cqw;font-size:1.8cqw}
@@ -261,8 +261,7 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
   <div class="walkman">
     <div class="top brushed">
       <div class="row fxrow"></div>
-      <div class="brand">PHONY</div>
-      <div class="model">STEREO CASSETTE PLAYER · PH-1</div>
+      <div class="model">STEREO CASSETTE PLAYER</div>
     </div>
     <div class="body">
       <div class="face brushed">
@@ -311,7 +310,6 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
         <div class="kb-fx">
           <button class="fxkey" aria-label="Tape sound: hiss and wow" aria-pressed="true"></button>
           <div class="kb-leds"><span class="led on fxled"></span><span class="tiny">FX</span><span class="led amber runled"></span><span class="tiny">RUN</span></div>
-          <div class="kb-brand">PHONY</div>
         </div>
         <div class="keys">
           <button class="key" data-k="rew" aria-label="Previous track. Hold to rewind."><span>◀◀</span></button>
@@ -598,7 +596,7 @@ function drawChassis(c, cw, ch){
   for (let y = 0; y < ch; y += 3){ c.beginPath(); c.moveTo(0, y); c.lineTo(cw, y); c.stroke(); }
   const u = cw / 100;
   c.fillStyle = 'rgba(255,255,255,.18)'; c.font = `600 ${2.6 * u}px ${PRINT}`; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
-  c.fillText('PHONY PH-1 · INSERT TAPE, SIDE A FACING OUT', 6 * u, 8 * u);
+  c.fillText('INSERT TAPE, SIDE A FACING OUT', 6 * u, 8 * u);
 }
 function renderThumb(canvas, tape){
   const dpr = Math.min(2, window.devicePixelRatio || 1), w = 300;
@@ -710,8 +708,9 @@ function eject(){
   if (!S.open) setTimeout(() => { if (!S.ejected || S.open) return; picker.hidden = false; requestAnimationFrame(() => picker.classList.add('show')); }, 330);
 }
 function hidePicker(){ picker.classList.remove('show'); setTimeout(() => { picker.hidden = true; }, 250); }
+let swapTimer = 0;
 function insert(i){
-  S.tape = i; hidePicker(); strip.classList.remove('ask');
+  clearTimeout(swapTimer); S.tape = i; hidePicker(); strip.classList.remove('ask');
   refreshShells(); tapeChanged();
   S.ejected = false; setTimeout(() => sfx('insert'), 170);
 }
@@ -724,7 +723,7 @@ function swapTo(i, keepPlaying){
   const was = S.playing && keepPlaying;
   if (!keepPlaying) pause();
   S.ejected = true; sfx('eject'); syncKeys();
-  setTimeout(() => { insert(i); if (was) syncKeys(); }, 450);
+  clearTimeout(swapTimer); swapTimer = setTimeout(() => { insert(i); if (was) syncKeys(); }, 450);
 }
 
 /* ---------- keys ---------- */
@@ -773,18 +772,26 @@ document.addEventListener('keydown', e => {
 });
 
 /* ---------- volume wheel ---------- */
+// click = the user moved the wheel; otherwise the phone's own volume changed and the wheel follows
 function setVol(v, click){
   const nv = Math.max(0, Math.min(1, v)); const step = Math.round(nv * 10) !== Math.round(S.vol * 10);
   S.vol = nv;
   $$('.track').forEach(t => { t.firstElementChild.style.top = ((1 - nv) * 100) + '%'; t.setAttribute('aria-valuenow', Math.round(nv * 10)); });
-  if (master) master.gain.setTargetAtTime(nv, ac.currentTime, .03);
-  if (N) N.setVolume(nv);
+  // on the phone, hiss and clicks already ride the media volume
+  if (master) master.gain.setTargetAtTime(N ? 1 : nv, ac.currentTime, .03);
+  if (N && click) N.setVolume(nv);
   if (click && step){ sfx('tick'); store.set('vol', nv); }
+}
+let volDrag = false, volPollAt = 0;
+function followPhoneVolume(now){
+  if (!N || volDrag || now - volPollAt < 250) return; volPollAt = now;
+  const v = N.getVolume(); if (v >= 0 && Math.abs(v - S.vol) > .004) setVol(v, false);
 }
 $$('.track').forEach(vt => {
   const from = e => { const r = vt.getBoundingClientRect(); setVol(1 - (e.clientY - r.top) / r.height, true); };
-  vt.addEventListener('pointerdown', e => { ensureAudio(); vt.setPointerCapture(e.pointerId); from(e); vt.onpointermove = from; });
-  vt.addEventListener('pointerup', () => vt.onpointermove = null);
+  vt.addEventListener('pointerdown', e => { ensureAudio(); volDrag = true; vt.setPointerCapture(e.pointerId); from(e); vt.onpointermove = from; });
+  const end = () => { vt.onpointermove = null; volDrag = false; };
+  vt.addEventListener('pointerup', end); vt.addEventListener('pointercancel', end);
   vt.addEventListener('keydown', e => { if (e.key === 'ArrowUp'){ e.preventDefault(); ensureAudio(); setVol(S.vol + .1, true); } if (e.key === 'ArrowDown'){ e.preventDefault(); ensureAudio(); setVol(S.vol - .1, true); } });
 });
 
@@ -932,7 +939,9 @@ function pollNative(now){
       R.key = key; R.cur = {title:st.title, artist:st.artist, album:st.album, dur:st.dur / 1000};
       S.src.app = st.app;
       const prevAlbum = R.hist.length ? R.hist[R.hist.length - 1].album : '';
-      setAlbumMode(!!st.album && prevAlbum === st.album);
+      // an album is playing if the app names its queue after the album, or two songs in a row share one
+      const sameName = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+      setAlbumMode(!!st.album && (sameName(st.queueTitle, st.album) || sameName(prevAlbum, st.album)));
       buildRemoteTracks(st.queue || []);
     }
     // cover art often arrives a moment after the track changes
@@ -1045,6 +1054,7 @@ function loop(now){
   const moving = (S.playing || S.cue) && !S.ejected;
   S.motor += ((moving ? 1 : 0) - S.motor) * Math.min(1, dt * (moving ? 14 : 20));
   pollNative(now);
+  followPhoneVolume(now);
   if (S.cue && !S.ejected){
     S.t += S.cue * 9 * dt;
     if (S.src.kind === 'files'){ const nt = audio.currentTime + S.cue * 9 * dt; if (nt >= 0 && nt < (audio.duration || 1e9)) audio.currentTime = nt; S.t = audio.currentTime; }
@@ -1102,7 +1112,7 @@ function buildShelves(){
 }
 
 /* ---------- boot ---------- */
-applyFx(); setVol(S.vol); buildShelves(); renderJList(); tapeChanged(); layout();
+applyFx(); setVol(N ? Math.max(0, N.getVolume()) : S.vol); buildShelves(); renderJList(); tapeChanged(); layout();
 const saved = store.get('src', null);
 if (N && saved){
   if (saved.kind === 'remote' && N.hasListenerAccess()) chooseSource(saved, true);

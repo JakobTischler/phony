@@ -3,6 +3,9 @@ package com.hughhowey.phony
 import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
+import android.media.AudioManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private val main = Handler(Looper.getMainLooper())
+    private lateinit var audio: AudioManager
 
     @Volatile private var itemCount = 0
     @Volatile private var stateJson = """{"playing":false,"index":0,"pos":0,"dur":0,"ended":false}"""
@@ -76,6 +80,8 @@ class MainActivity : ComponentActivity() {
 
         library = Library(this)
         remote = RemoteWatcher(this)
+        audio = getSystemService(AudioManager::class.java)
+        lockOrientation()
 
         val assets = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
@@ -110,6 +116,22 @@ class MainActivity : ComponentActivity() {
         }, ContextCompat.getMainExecutor(this))
 
         main.post(tick)
+    }
+
+    /**
+     * Cover screen: always upright (the closed player). Inner screen: always wide, so
+     * turning the open phone never swaps the cassette bay for the closed view.
+     * Both still flip 180° with the sensor.
+     */
+    private fun lockOrientation() {
+        val inner = resources.configuration.smallestScreenWidthDp >= 600
+        val want = if (inner) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        if (requestedOrientation != want) requestedOrientation = want
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        lockOrientation()
     }
 
     private fun hideSystemBars() {
@@ -211,7 +233,17 @@ class MainActivity : ComponentActivity() {
             controller?.setPlaybackParameters(PlaybackParameters(r, r))
         }
 
-        @JavascriptInterface fun setVolume(v: Float) = onMain { controller?.setVolume(v.coerceIn(0f, 1f)) }
+        /** The wheel works the phone's media volume, same as the side buttons (Bluetooth included). */
+        @JavascriptInterface fun setVolume(v: Float) = onMain {
+            val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            val index = Math.round(v.coerceIn(0f, 1f) * max)
+            if (index != audio.getStreamVolume(AudioManager.STREAM_MUSIC)) audio.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
+        }
+
+        @JavascriptInterface fun getVolume(): Float {
+            val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            return if (max > 0) audio.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / max else -1f
+        }
 
         // ----- whatever another app is playing -----
         @JavascriptInterface fun hasListenerAccess(): Boolean = remote.hasAccess()
