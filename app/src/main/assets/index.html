@@ -1253,16 +1253,20 @@ function loadCovers(){
 let rerenderT = 0;
 function rerenderSoon(){ clearTimeout(rerenderT); rerenderT = setTimeout(() => { if (boxVisible()) renderBoxes(); }, 120); }
 const boxVisible = () => $('.lid').classList.contains('boxopen') || $('#cover').classList.contains('boxopen');
+let lastNotice = -1;
 function readBox(){
   if (!N) return;
   try { boxStatus = JSON.parse(N.spotifyStatus()); } catch (e) {}
+  if (lastNotice < 0) lastNotice = boxStatus.noticeId || 0;
+  else if (boxStatus.noticeId && boxStatus.noticeId !== lastNotice){ lastNotice = boxStatus.noticeId; if (boxStatus.notice) toast(boxStatus.notice); }
   let list = []; try { list = JSON.parse(N.getBox()); } catch (e) {}
   const old = {}; CASES.forEach(c => { old[c.id] = c; });
   CASES = list.map(a => { const o = old[a.id]; return Object.assign(o || {pal:NEUTRAL}, {id:a.id, uri:a.uri, title:a.title, artist:a.artist, year:a.year, tracks:a.tracks || []}); });
   loadCovers();
 }
 window.phonyBoxChanged = () => { readBox(); rerenderSoon(); };
-window.phonyPlayed = (ok, msg) => { if (!ok && msg) toast(msg); };
+// for now PHONY says how it got Spotify to switch (or why it couldn't), to help sort out the connection
+window.phonyPlayed = (ok, msg) => { toast(ok ? 'Spotify switched albums: ' + msg : msg); };
 
 function coverArt(al, w, h, bare){
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');

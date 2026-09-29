@@ -55,6 +55,8 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         .put("updated", if (boxFile.exists()) boxFile.lastModified() else 0L)
         .put("spotify", SpotifyAppRemote.isSpotifyInstalled(ctx))
         .put("canPlay", canPlay)
+        .put("notice", notice)
+        .put("noticeId", noticeId)
         .toString()
 
     fun boxJson(): String = if (boxFile.exists()) boxFile.readText() else "[]"
@@ -62,14 +64,16 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     // ---------- signing in (PKCE, in the browser) ----------
 
     fun startLogin() {
+        // each sign-in page gets its own key, so an older Spotify tab still works when you agree in it
         val verifier = randomString(64)
-        prefs.edit().putString("verifier", verifier).apply()
+        val st = randomString(16)
+        prefs.edit().putString("pkce_$st", verifier).putString("verifier", verifier).apply()
         val challenge = b64url(MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray()))
         val url = "https://accounts.spotify.com/authorize" +
             "?response_type=code&client_id=$CLIENT_ID" +
             "&scope=" + enc(SCOPES) +
             "&redirect_uri=" + enc(REDIRECT) +
-            "&code_challenge_method=S256&code_challenge=$challenge"
+            "&code_challenge_method=S256&code_challenge=$challenge&state=$st"
         ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
@@ -79,22 +83,34 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         val code = uri.getQueryParameter("code")
         if (code == null) {
             // App Remote's own sign-in can come back here too, without a code; ignore that.
-            uri.getQueryParameter("error")?.let { state = "error"; message = "Spotify said no ($it)."; onChange() }
+            uri.getQueryParameter("error")?.let { tell("Spotify said no ($it).") }
             return true
         }
-        val verifier = prefs.getString("verifier", null) ?: return true
-        state = "loading"; message = ""; onChange()
+        if (code == prefs.getString("lastCode", null)) return true // already used (e.g. the app was reopened with the same link)
+        prefs.edit().putString("lastCode", code).apply()
+        val verifier = uri.getQueryParameter("state")?.let { prefs.getString("pkce_$it", null) }
+            ?: prefs.getString("verifier", null)
+            ?: run { tell("Sign-in expired. Tap the note in the box again."); return true }
+        if (!boxFile.exists()) { state = "loading"; message = "" }
+        tell("Signing in to Spotify…")
         Thread {
             try {
                 val j = token("grant_type=authorization_code&code=${enc(code)}&redirect_uri=${enc(REDIRECT)}&client_id=$CLIENT_ID&code_verifier=${enc(verifier)}")
                 saveTokens(j)
+                tell(if (canPlay) "Signed in. PHONY can now change what Spotify plays." else "Signed in, but Spotify didn't grant control of playback.")
                 syncNow()
             } catch (e: Exception) {
-                state = "error"; message = "Couldn't sign in to Spotify."; onChange()
+                if (!boxFile.exists()) state = "error"
+                tell("Couldn't sign in to Spotify (" + (e.message ?: e.javaClass.simpleName) + ").")
             }
         }.start()
         return true
     }
+
+    /** A one-line message for the page to show. */
+    @Volatile var notice = ""; private set
+    @Volatile var noticeId = 0; private set
+    fun tell(msg: String) { notice = msg; noticeId++; message = msg; onChange() }
 
     fun signOut() {
         prefs.edit().clear().apply(); access = null; accessUntil = 0
@@ -128,7 +144,10 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         try {
             c.outputStream.use { it.write(body.toByteArray()) }
             val code = c.responseCode
-            if (code != 200) throw HttpError(code)
+            if (code != 200) {
+                val why = try { JSONObject(c.errorStream.bufferedReader().use { it.readText() }).let { it.optString("error_description").ifEmpty { it.optString("error") } } } catch (e: Exception) { "" }
+                throw HttpError(code, why)
+            }
             return JSONObject(c.inputStream.bufferedReader().use { it.readText() })
         } finally { c.disconnect() }
     }
@@ -245,13 +264,13 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             if (canPlay) {
                 web = try { playWeb(uri); null } catch (e: Exception) { "web: " + (e.message ?: e.javaClass.simpleName) }
             }
-            if (web == null) { main.post { done(true, "") }; return@Thread }
+            if (web == null) { main.post { done(true, "web") }; return@Thread }
             notes += web
             main.post {
                 if (remoteWatcher.playFromUri(uri)) {
                     // give Spotify a moment, then check it actually switched
                     main.postDelayed({
-                        if (remoteWatcher.playingAlbum(title)) done(true, "")
+                        if (remoteWatcher.playingAlbum(title)) done(true, "media controls (" + notes.joinToString("; ") + ")")
                         else { notes += "media controls: no change"; viaAppRemote(uri, notes, done) }
                     }, 2500)
                 } else { notes += "media controls: Spotify isn't open"; viaAppRemote(uri, notes, done) }
@@ -274,7 +293,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         val finish = { ok: Boolean, note: String ->
             if (!answered) {
                 answered = true
-                if (ok) done(true, "") else { notes += "app remote: $note"; done(false, "Spotify didn't switch albums (" + notes.joinToString("; ") + ")") }
+                if (ok) done(true, "app remote (" + notes.joinToString("; ") + ")") else { notes += "app remote: $note"; done(false, "Spotify didn't switch albums (" + notes.joinToString("; ") + ")") }
             }
         }
         main.postDelayed({ finish(false, "no answer") }, 10_000)
@@ -348,7 +367,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
 
     // ---------- bits ----------
 
-    private class HttpError(val code: Int) : Exception("HTTP $code")
+    private class HttpError(val code: Int, why: String = "") : Exception("HTTP $code" + if (why.isEmpty()) "" else " $why")
 
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
     private fun b64url(b: ByteArray) = Base64.encodeToString(b, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
