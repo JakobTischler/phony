@@ -232,6 +232,77 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .srow.muted{cursor:default}
 .srow:active{background:rgba(255,228,70,.35)}
 .toast{position:fixed;left:50%;bottom:6vh;transform:translateX(-50%);z-index:99;max-width:80vw;padding:12px 18px;border-radius:12px;background:rgba(15,20,30,.92);color:#eef2f8;font-family:var(--f-print);font-weight:600;font-size:17px;letter-spacing:.02em;text-align:center}
+
+/* ---------- the tape box ---------- */
+.walkman{transition:transform .5s cubic-bezier(.3,.8,.3,1)}
+#cover{background:#241a14}
+#cover.boxopen .walkman{transform:translateY(-84%);box-shadow:0 2cqw 4cqw rgba(0,0,0,.6)}
+#cover .walkman{z-index:2;background:#000}
+.jstack{position:relative;flex:1;min-height:0;border-radius:1.2cqw}
+.jstack .jcard{position:absolute;inset:0;z-index:2;transition:transform .5s cubic-bezier(.3,.8,.3,1)}
+.lid.boxopen .jstack .jcard{transform:translateY(calc(100% + 6cqw)) rotate(2deg)}
+.lid .keybar{z-index:3}
+.boxbay{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;overscroll-behavior:contain;
+  background:
+    repeating-linear-gradient(94deg,rgba(0,0,0,.08) 0 .5cqw,transparent .5cqw 3cqw),
+    repeating-linear-gradient(88deg,rgba(255,220,170,.035) 0 .3cqw,transparent .3cqw 5cqw),
+    linear-gradient(180deg,#4a3324,#2e2018 70%,#241912)}
+.boxbay::-webkit-scrollbar{display:none}
+.boxbay.c{padding:calc(151cqw * .16 + 3cqw) 0 6cqw;box-sizing:border-box;opacity:0;transition:opacity .3s}
+#cover.boxopen .boxbay.c{opacity:1}
+.boxbay.o{border-radius:1.2cqw;padding:4cqw 0 6cqw;box-sizing:border-box;z-index:1}
+.boxes{display:flex;flex-direction:column;align-items:center;gap:5cqw}
+.box{position:relative;width:88cqw;padding:5.4cqw 3cqw 3.2cqw;box-sizing:border-box;border-radius:2.2cqw;
+  background:linear-gradient(180deg,rgba(58,50,46,.9),rgba(30,26,24,.94));
+  box-shadow:0 2.4cqw 3.6cqw rgba(0,0,0,.55),inset 0 0 0 .5cqw rgba(0,0,0,.35),inset 0 .5cqw 0 rgba(255,255,255,.12)}
+.box::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;
+  background:linear-gradient(112deg,rgba(255,255,255,.1),transparent 26%,transparent 60%,rgba(255,255,255,.05) 70%,transparent 78%)}
+.box::after{content:"";position:absolute;left:-.6cqw;right:-.6cqw;top:-.6cqw;height:4.2cqw;border-radius:2.2cqw 2.2cqw 1cqw 1cqw;background:linear-gradient(180deg,#5d534c,#2b2522);box-shadow:0 .6cqw 1cqw rgba(0,0,0,.45);z-index:2}
+.dymo{position:absolute;top:.5cqw;left:50%;transform:translateX(-50%) rotate(-1deg);z-index:4;padding:.3cqw 2.4cqw;border-radius:.4cqw;background:#c62b24;color:#fbe9e2;font-family:var(--f-print);font-weight:800;font-size:2.6cqw;letter-spacing:.3em;text-shadow:0 .15cqw 0 rgba(0,0,0,.35);box-shadow:0 .2cqw .3cqw rgba(0,0,0,.5)}
+.slots{position:relative;display:flex;flex-direction:column;gap:.7cqw;padding:.7cqw;border-radius:1cqw;background:repeating-linear-gradient(180deg,#141210 0 11.3cqw,#2a2522 11.3cqw 12cqw);box-shadow:inset 0 .8cqw 1.4cqw rgba(0,0,0,.8)}
+.case{position:relative;height:11.3cqw;width:100%;border:0;padding:0;cursor:pointer;display:block;background:none;transition:transform .28s cubic-bezier(.3,.8,.3,1);transform:translateX(var(--jx,0)) rotate(var(--jr,0deg))}
+.case .sp{position:absolute;inset:.9cqw 1.4cqw;display:flex;align-items:center;gap:2cqw;overflow:hidden;background:var(--bg);color:var(--fg);border-radius:.2cqw;padding-right:2.4cqw}
+.case .sp canvas{flex:none;height:100%;width:auto;aspect-ratio:1}
+.case .sp .who{font-family:var(--f-print);font-weight:800;font-size:3.5cqw;letter-spacing:.06em;white-space:nowrap;text-transform:uppercase}
+.case .sp .what{flex:1;min-width:0;font-family:var(--f-print);font-weight:600;font-size:3.5cqw;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;text-transform:uppercase}
+.case .sp .yr{flex:none;font-family:var(--f-print);font-weight:600;font-size:2.5cqw;letter-spacing:.1em;opacity:.7}
+.case::before{content:"";position:absolute;inset:0;border-radius:.8cqw;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.06) 18%,transparent 40%,transparent 78%,rgba(255,255,255,.1) 90%,rgba(255,255,255,.22));
+  box-shadow:inset 0 0 0 .3cqw rgba(230,240,245,.28),0 .3cqw .5cqw rgba(0,0,0,.5)}
+.case::after{content:"";position:absolute;top:2.6cqw;bottom:2.6cqw;left:.3cqw;width:.8cqw;border-radius:.3cqw;background:rgba(220,230,236,.35);z-index:3;box-shadow:calc(88cqw - 12.2cqw) 0 0 rgba(220,230,236,.35)}
+.case:active,.case.pull{transform:translateX(calc(var(--jx,0) + 5cqw)) rotate(var(--jr,0deg))}
+.case.fresh{animation:fresh .7s cubic-bezier(.2,.9,.3,1.1) both}
+@keyframes fresh{from{transform:translateX(-110%) rotate(-3deg);opacity:.3}}
+.case:focus-visible{outline:.5cqw solid var(--orange);outline-offset:.2cqw}
+.gap{height:11.3cqw;border-radius:.8cqw;box-shadow:inset 0 0 0 .3cqw rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center}
+.gap i{font-family:var(--f-hand);font-size:5.6cqw;color:rgba(255,236,210,.32);font-style:normal;transform:rotate(-1.5deg)}
+.slot0{height:11.3cqw}
+.blanks{display:grid;grid-template-columns:1fr 1fr;gap:4cqw 5cqw;width:82cqw;padding:2cqw 0 0}
+.blanks button{display:flex;flex-direction:column;gap:1.2cqw;align-items:flex-start;background:none;border:0;padding:0;cursor:pointer;color:rgba(255,236,210,.75);transform:rotate(var(--r,0deg))}
+.blanks canvas{width:100%;height:auto;aspect-ratio:1000/638;border-radius:1.2cqw;box-shadow:0 1.4cqw 2.4cqw rgba(0,0,0,.55)}
+.blanks b{font-family:var(--f-print);font-weight:600;font-size:2.8cqw;letter-spacing:.08em}
+
+/* one case, out of the box */
+.caseview{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4cqw;background:rgba(18,12,8,.72);opacity:0;transition:opacity .25s}
+.caseview.show{opacity:1}
+.bigcase{position:relative;width:62cqw;aspect-ratio:70/109;border:0;padding:0;background:none;cursor:pointer;perspective:220cqw;transition:transform .45s cubic-bezier(.3,.8,.3,1),opacity .45s}
+.bigcase .tray{position:absolute;inset:0;border-radius:1.4cqw;background:linear-gradient(180deg,rgba(40,40,44,.55),rgba(20,20,22,.7));box-shadow:0 3cqw 5cqw rgba(0,0,0,.6),inset 0 0 0 .4cqw rgba(220,235,240,.25)}
+.bigcase .tray canvas{position:absolute;left:6%;top:50%;width:88%;height:auto;transform:translateY(-50%) rotate(-90deg) scale(1.5);transform-origin:50% 50%;opacity:0;transition:opacity .2s;border-radius:2cqw}
+.bigcase .lidf{position:absolute;inset:0;border-radius:1.4cqw;transform-origin:0 50%;transition:transform .55s cubic-bezier(.4,.1,.3,1);transform-style:preserve-3d}
+.bigcase .lidf canvas{position:absolute;inset:3% 4% 3% 6%;width:90%;height:94%;border-radius:.4cqw;backface-visibility:hidden}
+.bigcase .lidf::after{content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;
+  background:linear-gradient(118deg,rgba(255,255,255,.3),rgba(255,255,255,.04) 30%,transparent 55%,rgba(255,255,255,.12) 64%,transparent 72%);
+  box-shadow:inset 0 0 0 .5cqw rgba(225,238,244,.4),inset 1.6cqw 0 0 -1cqw rgba(225,238,244,.3)}
+.bigcase.opening .lidf{transform:rotateY(-150deg)}
+.bigcase.opening .tray canvas{opacity:1}
+.bigcase.gone{transform:translateY(-30%) scale(.7);opacity:0}
+.caseinfo{text-align:center;color:#f6ead6;max-width:80cqw}
+.caseinfo b{display:block;font-family:var(--f-print);font-weight:800;font-size:5.4cqw;letter-spacing:.04em;line-height:1.05;text-transform:uppercase}
+.caseinfo small{display:block;font-family:var(--f-print);font-weight:600;font-size:3.4cqw;letter-spacing:.12em;opacity:.7;text-transform:uppercase;margin-top:.8cqw}
+.lid,.jstack{overflow:clip}
+.case.note .sp{background:linear-gradient(180deg,#f4edda,#e6dbc1);justify-content:center;padding:0 3cqw}
+.case.note .hw{font-family:var(--f-hand);font-size:6cqw;line-height:1;color:var(--pen);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform:rotate(-1deg)}
+.case:disabled{cursor:default}
 </style></head><body>
 <template id="sidetpl">
   <div class="side">
@@ -258,6 +329,7 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 
 <!-- closed: cover screen -->
 <div class="screen" id="cover">
+  <div class="boxbay c"></div>
   <div class="walkman">
     <div class="top brushed">
       <div class="row fxrow"></div>
@@ -285,6 +357,7 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 <div class="inner" id="inner" hidden>
   <div class="half">
     <div class="lid brushed">
+      <div class="jstack"><div class="boxbay o"></div>
       <div class="jcard" id="jcard">
         <button class="spine" id="spine" aria-label="Choose music">
           <canvas class="albumart" id="albumart" width="880" height="420"></canvas>
@@ -305,7 +378,7 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
         </div>
         <ol class="jlist" id="jlist"></ol>
         <div class="shelfstrip" id="shelfstrip" aria-label="Tape shelf"></div>
-      </div>
+      </div></div>
       <div class="keybar">
         <div class="kb-fx">
           <button class="fxkey" aria-label="Tape sound: hiss and wow" aria-pressed="true"></button>
@@ -705,9 +778,9 @@ const picker = $('#picker'), strip = $('#shelfstrip');
 function eject(){
   pause(); S.ejected = true; sfx('eject'); syncKeys();
   strip.classList.add('ask');
-  if (!S.open) setTimeout(() => { if (!S.ejected || S.open) return; picker.hidden = false; requestAnimationFrame(() => picker.classList.add('show')); }, 330);
+  setTimeout(() => { if (S.ejected) showBox(); }, 330);
 }
-function hidePicker(){ picker.classList.remove('show'); setTimeout(() => { picker.hidden = true; }, 250); }
+function hidePicker(){ picker.classList.remove('show'); picker.hidden = true; hideBox(); }
 let swapTimer = 0;
 function insert(i){
   clearTimeout(swapTimer); S.tape = i; hidePicker(); strip.classList.remove('ask');
@@ -941,7 +1014,7 @@ function pollNative(now){
       const prevAlbum = R.hist.length ? R.hist[R.hist.length - 1].album : '';
       // an album is playing if the app names its queue after the album, or two songs in a row share one
       const sameName = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
-      setAlbumMode(!!st.album && (sameName(st.queueTitle, st.album) || sameName(prevAlbum, st.album)));
+      setAlbumMode(!!st.album && (sameName(st.queueTitle, st.album) || sameName(prevAlbum, st.album) || (!!S.boxAlbum && sameName(S.boxAlbum.title, st.album))));
       buildRemoteTracks(st.queue || []);
     }
     // cover art often arrives a moment after the track changes
@@ -1040,8 +1113,8 @@ function layout(){
   if (open === S.open && layout.done) return; layout.done = true;
   S.open = open;
   $('#cover').hidden = open; $('#inner').hidden = !open;
-  if (open){ picker.hidden = true; picker.classList.remove('show'); if (S.ejected) strip.classList.add('ask'); }
-  else { closeSheet(); if (S.ejected){ picker.hidden = false; requestAnimationFrame(() => picker.classList.add('show')); } }
+  hideBox(); if (!open) closeSheet();
+  if (S.ejected) showBox();
   requestAnimationFrame(() => { wins.forEach(sizeWin); markJList(); });
 }
 addEventListener('resize', layout);
@@ -1110,6 +1183,253 @@ function buildShelves(){
   });
   $$('#shelfstrip button').forEach(b => b.classList.toggle('on', +b.dataset.i === S.tape));
 }
+
+
+/* ---------- the tape box: every album you play gets a case; ten to a box ---------- */
+const PER_BOX = 10;
+// In the app these come from Spotify (title, artist, year, cover). In this mockup they're invented.
+const DEMO_CASES = [
+  {id:'a1', title:'Breakwater', artist:'The Undertows', year:1986, art:'sun', pal:['#1f2c4f','#e8704a','#f6c572','#f3e6cf']},
+  {id:'a2', title:'Paper Suns', artist:'Mara Vell', year:1991, art:'circle', pal:['#efe4cc','#d8412f','#1d1d1d','#1d1d1d']},
+  {id:'a3', title:'Night Ferry', artist:'Cobalt Nine', year:1984, art:'bokeh', pal:['#0b1230','#3b6fd8','#ff5a8a','#dfe8ff']},
+  {id:'a4', title:'Low Tide Radio', artist:'The Marlinspikes', year:1988, art:'sun', pal:['#2a1f5c','#8d3b6e','#ffc36b','#fff3df']},
+  {id:'a5', title:'Velvet Arcade', artist:'Juniper Kane', year:1989, art:'grid', pal:['#171717','#ff5fa2','#19b5a5','#ffcf33']},
+  {id:'a6', title:'Glass Weather', artist:'Oslo Radio Club', year:1993, art:'waves', pal:['#d7e3e6','#2d5d73','#8fb3bf','#12303d']},
+  {id:'a7', title:'Dry County', artist:'Wes Harlan', year:1988, art:'split', pal:['#c9772e','#f1dca8','#3a2415','#3a2415']},
+  {id:'a8', title:'Kingfisher', artist:'Ada & the Seconds', year:1995, art:'stripes', pal:['#0e6f7a','#f2b134','#e2553a','#f7efe0']},
+  {id:'a9', title:'Neon Psalms', artist:'The Vespers', year:1987, art:'bokeh', pal:['#1a0826','#c13cff','#2fe0d0','#f5d9ff']},
+  {id:'a10', title:'Second Summer', artist:'Tamsin Rook', year:1990, art:'circle', pal:['#f4c9b8','#2f4a8a','#fff7ee','#2f2a45']},
+  {id:'a11', title:'Blue Hour Drive', artist:'Delancey', year:1985, art:'stripes', pal:['#10213f','#f07b3f','#ffd166','#e9f0ff']},
+  {id:'a12', title:'Tin Roof Rain', artist:'Eliza Mae Coombs', year:1996, art:'waves', pal:['#e9dfc9','#6b4f3a','#a88d6d','#3b2a1e']},
+  {id:'a13', title:'Wolves at the Marina', artist:'Sundial', year:1992, art:'grid', pal:['#eae6dd','#1b3b6f','#d1453b','#111']},
+];
+const MORE = [
+  {id:'n1', title:'Harbour of Small Hours', artist:'Pilot Whale', year:1994, art:'split', pal:['#22343c','#e7c873','#f4eee0','#f4eee0']},
+  {id:'n2', title:'Gold Leaf Motel', artist:'The Carousel Kings', year:1983, art:'sun', pal:['#3a1030','#f0506e','#ffd86b','#fff0d6']},
+  {id:'n3', title:'Starboard', artist:'Minna Ashe', year:1997, art:'circle', pal:['#0f2d4a','#f3efe4','#e2553a','#f3efe4']},
+];
+const TRACKS = ['Opening Night', 'Salt in the Wires', 'Southbound', 'All the Lights at Once', 'Half a Heart', 'Undertow', 'Late Ferry', 'Nobody Waves Back', 'The Long Way Home', 'Paper Crowns', 'Radio Silence', 'Last Song on the Tape'];
+let inPlayer = null;
+let CASES = N ? [] : DEMO_CASES;
+let boxStatus = N ? {signedIn:false, state:'idle', message:''} : {signedIn:true, state:'ready', message:''};
+const NEUTRAL = ['#2b2724', '#8a7a66', '#c8b89a', '#efe6d6'];
+const sameTitle = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+// the case for whatever album tape is in the player (picked from the box, or noticed playing in Spotify)
+function currentCaseId(){
+  if (S.tape !== ALBUM_TAPE) return null;
+  if (S.boxAlbum && CASES.find(c => c.id === S.boxAlbum.id)) return S.boxAlbum.id;
+  const c = CASES.find(c => sameTitle(c.title, ALBUM.title)); return c ? c.id : null;
+}
+// a spine takes its colour from the cover
+function paletteFrom(img){
+  const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d'); x.drawImage(img, 0, 0, 16, 16);
+  const d = x.getImageData(0, 0, 16, 16).data; let r = 0, g = 0, b = 0, n = 0, best = null, bs = -1;
+  for (let i = 0; i < d.length; i += 4){ r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+    const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]), sat = mx ? (mx - mn) / mx : 0;
+    if (sat * mx > bs){ bs = sat * mx; best = [d[i], d[i + 1], d[i + 2]]; } }
+  const hex = (a) => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  const avg = [r / n, g / n, b / n];
+  return [hex(avg), hex(best || avg), hex(best || avg), '#f3ecde'];
+}
+function loadCovers(){
+  if (!N) return;
+  CASES.forEach(al => {
+    if (al.img || al.imgTried === 2) return;
+    const src = N.getCover(al.id); if (!src){ al.imgTried = 1; return; }
+    al.imgTried = 2;
+    const im = new Image(); im.onload = () => { al.img = im; al.pal = paletteFrom(im); Object.keys(artCache).forEach(k => { if (k.startsWith(al.id)) delete artCache[k]; }); rerenderSoon(); }; im.src = src;
+  });
+}
+let rerenderT = 0;
+function rerenderSoon(){ clearTimeout(rerenderT); rerenderT = setTimeout(() => { if (boxVisible()) renderBoxes(); }, 120); }
+const boxVisible = () => $('.lid').classList.contains('boxopen') || $('#cover').classList.contains('boxopen');
+function readBox(){
+  if (!N) return;
+  try { boxStatus = JSON.parse(N.spotifyStatus()); } catch (e) {}
+  let list = []; try { list = JSON.parse(N.getBox()); } catch (e) {}
+  const old = {}; CASES.forEach(c => { old[c.id] = c; });
+  CASES = list.map(a => { const o = old[a.id]; return Object.assign(o || {pal:NEUTRAL}, {id:a.id, uri:a.uri, title:a.title, artist:a.artist, year:a.year, tracks:a.tracks || []}); });
+  loadCovers();
+}
+window.phonyBoxChanged = () => { readBox(); rerenderSoon(); };
+window.phonyPlayed = (ok, msg) => { if (!ok && msg) toast(msg); };
+
+function coverArt(al, w, h, bare){
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  if (al.img){
+    const iw = al.img.naturalWidth, ih = al.img.naturalHeight, k = Math.max(w / iw, h / ih);
+    x.drawImage(al.img, (w - iw * k) / 2, (h - ih * k) / 2, iw * k, ih * k); return c;
+  }
+  if (N){ // on the phone, before the cover arrives: a plain printed card
+    x.fillStyle = al.pal[0]; x.fillRect(0, 0, w, h); x.fillStyle = al.pal[3]; x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+    const mm = Math.min(w, h); fit(x, (al.artist || '').toUpperCase(), mm * .08, h * .5, w - mm * .16, mm * .09, PRINT, '800'); fit(x, al.title || '', mm * .08, h * .5 + mm * .12, w - mm * .16, mm * .075, PRINT, '600');
+    return c;
+  }
+  const [bg, a, b, fg] = al.pal, r = rng(al.id.split('').reduce((s, ch) => s * 31 + ch.charCodeAt(0), 7));
+  x.fillStyle = bg; x.fillRect(0, 0, w, h);
+  const m = Math.min(w, h);
+  if (al.art === 'sun'){
+    const g = x.createLinearGradient(0, 0, 0, h * .62); g.addColorStop(0, bg); g.addColorStop(.6, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, w, h * .62);
+    x.fillStyle = b; x.beginPath(); x.arc(w * .62, h * .62, m * .22, Math.PI, 0); x.fill();
+    x.fillStyle = bg; x.fillRect(0, h * .62, w, h);
+    x.fillStyle = b; for (let i = 0; i < 7; i++){ const ww = m * (.4 - i * .05); x.globalAlpha = .7 - i * .08; x.fillRect(w * .62 - ww / 2, h * .65 + i * h * .035, ww, h * .012); } x.globalAlpha = 1;
+  } else if (al.art === 'circle'){
+    x.fillStyle = a; x.beginPath(); x.arc(w * (.35 + r() * .3), h * .46, m * .3, 0, TAU); x.fill();
+    x.strokeStyle = b; x.lineWidth = m * .012; x.beginPath(); x.arc(w * .5, h * .46, m * .36, 0, TAU); x.stroke();
+  } else if (al.art === 'bokeh'){
+    for (let i = 0; i < 40; i++){ const rr = m * (.02 + r() * .08), px = r() * w, py = r() * h * .8, col = r() < .5 ? a : b;
+      const g = x.createRadialGradient(px, py, 0, px, py, rr); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = .35 + r() * .5; x.fillStyle = g; x.fillRect(px - rr, py - rr, rr * 2, rr * 2); }
+    x.globalAlpha = 1;
+  } else if (al.art === 'grid'){
+    const n = 4, s = m * .15, ox = (w - n * s * 1.25) / 2 + s * .12, oy = h * .18;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++){ const t = r(); x.fillStyle = t < .33 ? a : t < .66 ? b : fg; x.save(); x.translate(ox + i * s * 1.25 + s / 2, oy + j * s * 1.25 + s / 2); x.rotate((r() - .5) * .4);
+      if (t < .5) x.fillRect(-s / 2, -s / 2, s, s); else { x.beginPath(); x.arc(0, 0, s / 2, 0, TAU); x.fill(); } x.restore(); }
+  } else if (al.art === 'waves'){
+    x.lineWidth = m * .014;
+    for (let k = 0; k < 16; k++){ x.strokeStyle = k % 3 ? b : a; x.beginPath(); for (let i = 0; i <= 40; i++){ const px = i / 40 * w, py = h * .2 + k * h * .04 + Math.sin(i / 40 * TAU * 1.5 + k * .5) * m * .03; i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); }
+  } else if (al.art === 'split'){
+    x.fillStyle = a; x.fillRect(0, h * .5, w, h * .5);
+    x.fillStyle = b; x.fillRect(w * .12, h * .5 - m * .006, w * .76, m * .012);
+    x.beginPath(); x.arc(w * .5, h * .5, m * .12, Math.PI, 0); x.fill();
+  } else if (al.art === 'stripes'){
+    [a, b, fg, a].forEach((col, i) => { x.fillStyle = col; x.save(); x.translate(w * .5, h * .5); x.rotate(-.5); x.fillRect(-w, -m * .3 + i * m * .12, w * 2, m * .07); x.restore(); });
+  }
+  // the title, small, the way covers set it
+  if (!bare){ x.fillStyle = fg; x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  fit(x, al.artist.toUpperCase(), m * .07, h - m * .15, w - m * .14, m * .065, PRINT, '800');
+  fit(x, al.title, m * .07, h - m * .07, w - m * .14, m * .055, PRINT, '600'); }
+  // a little age
+  x.globalCompositeOperation = 'multiply'; x.fillStyle = 'rgba(230,210,170,.18)'; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'source-over';
+  return c;
+}
+const artCache = {};
+const art = (al, w, h, bare) => { if (!al.pal) al.pal = NEUTRAL; const k = al.id + w + 'x' + h + (bare ? 'b' : ''); return artCache[k] || (artCache[k] = coverArt(al, w, h, bare)); };
+function lum(hex){ const v = parseInt(hex.slice(1), 16); return ((v >> 16) * .299 + ((v >> 8) & 255) * .587 + (v & 255) * .114) / 255; }
+
+function caseEl(al, i){
+  const b = document.createElement('button'); b.className = 'case'; b.dataset.id = al.id;
+  const bg = al.pal[0], fg = lum(bg) > .55 ? '#1b1a18' : '#f6efe2';
+  b.style.setProperty('--bg', bg); b.style.setProperty('--fg', fg);
+  const rr = rng(i * 13 + al.id.length * 7); b.style.setProperty('--jx', ((rr() - .5) * 1.4).toFixed(2) + 'cqw'); b.style.setProperty('--jr', ((rr() - .5) * .5).toFixed(2) + 'deg');
+  b.setAttribute('aria-label', `${al.title} by ${al.artist}`);
+  const sp = document.createElement('span'); sp.className = 'sp';
+  const cv = art(al, 120, 120), c2 = document.createElement('canvas'); c2.width = 120; c2.height = 120; c2.getContext('2d').drawImage(cv, 0, 0);
+  sp.append(c2);
+  sp.insertAdjacentHTML('beforeend', '<span class="who"></span><span class="what"></span><span class="yr"></span>');
+  sp.querySelector('.who').textContent = al.artist; sp.querySelector('.what').textContent = al.title; sp.querySelector('.yr').textContent = al.year;
+  b.append(sp);
+  b.addEventListener('click', () => { ensureAudio(); sfx('tick'); b.classList.add('pull'); setTimeout(() => b.classList.remove('pull'), 400); showCase(al, b.closest('.boxbay')); });
+  return b;
+}
+function statusCard(){
+  const note = (text, onClick) => { const b = document.createElement('button'); b.className = 'case note'; b.innerHTML = '<span class="sp"><span class="hw"></span></span>'; b.querySelector('.hw').textContent = text; if (onClick) b.addEventListener('click', () => { ensureAudio(); sfx('tick'); onClick(); }); else b.disabled = true; return b; };
+  if (!boxStatus.spotify && N) return note('Install Spotify to fill the box.');
+  if (!boxStatus.signedIn) return note('Sign in to Spotify to fill the box.', () => N.spotifyLogin());
+  if (boxStatus.state === 'error' && !CASES.length) return note((boxStatus.message || 'Couldn\'t reach Spotify.') + ' Tap to try again.', () => { N.boxSync(true); });
+  if (!CASES.length && boxStatus.state === 'loading') return note('Fetching your albums…');
+  if (!CASES.length) return note('Save an album in Spotify and it shows up here.', () => N.boxSync(true));
+  return null;
+}
+function renderBox(bay, fresh){
+  const keep = bay.scrollTop;
+  inPlayer = currentCaseId();
+  const wrap = document.createElement('div'); wrap.className = 'boxes';
+  const sc = statusCard();
+  const n = Math.max(1, Math.ceil(CASES.length / PER_BOX)) + (CASES.length % PER_BOX === 0 ? 1 : 0);
+  for (let k = 0; k < n; k++){
+    const box = document.createElement('div'); box.className = 'box';
+    const dy = document.createElement('span'); dy.className = 'dymo'; dy.textContent = String(k + 1); box.append(dy);
+    const sl = document.createElement('div'); sl.className = 'slots';
+    for (let j = 0; j < PER_BOX; j++){
+      if (sc && k === 0 && j === 0){ sl.append(sc); continue; }
+      const al = CASES[k * PER_BOX + j];
+      if (!al){ const e = document.createElement('div'); e.className = 'slot0'; sl.append(e); continue; }
+      if (inPlayer === al.id){ const g = document.createElement('div'); g.className = 'gap'; g.innerHTML = '<i>in the player</i>'; sl.append(g); continue; }
+      const el = caseEl(al, k * PER_BOX + j); if (fresh === al.id) el.classList.add('fresh'); sl.append(el);
+    }
+    box.append(sl); wrap.append(box);
+  }
+  // the blank tapes, loose on the desk
+  const bl = document.createElement('div'); bl.className = 'blanks';
+  TAPES.forEach((tp, i) => { if (tp.printed) return;
+    const cv = document.createElement('canvas'); renderThumb(cv, tp);
+    const b = document.createElement('button'); b.style.setProperty('--r', ((i % 3) - 1) * 1.5 + 'deg'); b.append(cv); const nm = document.createElement('b'); nm.textContent = tp.name.toUpperCase(); b.append(nm);
+    b.addEventListener('click', () => { ensureAudio(); S.boxAlbum = null; S.userTape = i; store.set('tape', i); S.albumMode = false; if (!N && S.src.album){ S.src = {kind:'demo', title:'For the boat'}; S.tracks = DEMO.slice(); S.idx = 0; S.t = 0; renderJList(); } insert(i); });
+    bl.append(b);
+  });
+  wrap.append(bl);
+  bay.innerHTML = ''; bay.append(wrap); bay.scrollTop = keep;
+}
+function renderBoxes(fresh){ $$('.boxbay').forEach(bay => renderBox(bay, fresh)); }
+
+function showCase(al, bay){
+  const host = bay.parentElement, v = document.createElement('div'); v.className = 'caseview';
+  const bc = document.createElement('button'); bc.className = 'bigcase'; bc.setAttribute('aria-label', 'Open the case and play ' + al.title);
+  const tray = document.createElement('span'); tray.className = 'tray';
+  const tape = document.createElement('canvas');
+  const lid = document.createElement('span'); lid.className = 'lidf';
+  const front = document.createElement('canvas'); front.width = 440; front.height = 690; const fx = front.getContext('2d');
+  // a J-card front: the cover on top, a printed band below
+  fx.fillStyle = al.pal[0]; fx.fillRect(0, 0, 440, 690);
+  fx.drawImage(art(al, 440, 440, true), 0, 0);
+  const ink = lum(al.pal[0]) > .55 ? '#1b1a18' : '#f6efe2';
+  fx.fillStyle = al.pal[1]; fx.fillRect(0, 440, 440, 10);
+  fx.fillStyle = ink; fx.textAlign = 'left'; fx.textBaseline = 'alphabetic';
+  fit(fx, al.artist.toUpperCase(), 30, 520, 380, 44, PRINT, '800');
+  fit(fx, al.title, 30, 572, 380, 40, PRINT, '600');
+  fx.globalAlpha = .6; fit(fx, `${al.year}  ·  STEREO  ·  HIGH FIDELITY`, 30, 650, 380, 20, PRINT, '600'); fx.globalAlpha = 1;
+  lid.append(front); bc.append(tray, lid);
+  const info = document.createElement('div'); info.className = 'caseinfo'; info.innerHTML = '<b></b><small></small>';
+  info.querySelector('b').textContent = al.title; info.querySelector('small').textContent = `${al.artist} · ${al.year}`;
+  v.append(bc, info); host.append(v);
+  requestAnimationFrame(() => v.classList.add('show'));
+  const close = () => { v.classList.remove('show'); setTimeout(() => v.remove(), 250); };
+  v.addEventListener('click', e => { if (e.target === v) close(); });
+  bc.addEventListener('click', () => {
+    if (bc.classList.contains('opening')) return;
+    // this album's worn tape, lying in the case
+    ALBUM.title = al.title; ALBUM.artist = al.artist; ALBUM.img = art(al, 880, 880); ALBUM.key = 'box|' + al.id;
+    renderThumb(tape, TAPES[ALBUM_TAPE]); tray.append(tape);
+    sfx('eject'); bc.classList.add('opening');
+    setTimeout(() => { bc.classList.add('gone'); info.style.opacity = 0; }, 700);
+    setTimeout(() => { close(); loadFromBox(al); }, 1050);
+  });
+}
+function loadFromBox(al){
+  S.boxAlbum = {id:al.id, title:al.title};
+  if (N){
+    N.playAlbum(al.uri);
+    if (S.tape === ALBUM_TAPE) S.tape = S.userTape; // no second eject: this tape replaces it
+    if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true);
+    else toast('Turn on notification access for PHONY so it can follow Spotify.');
+    S.boxAlbum = {id:al.id, title:al.title};
+    ALBUM.title = al.title; ALBUM.artist = al.artist; ALBUM.img = al.img || art(al, 880, 880); ALBUM.key = 'box|' + al.id;
+    S.albumMode = true; S.ejected = true; insert(ALBUM_TAPE); renderBoxes();
+    S.playing = true; S.startAt = S.cmdAt = performance.now(); setTimeout(() => sfx('latch'), 250); syncKeys();
+    return;
+  }
+  const r = rng(al.year * 7 + al.title.length);
+  const pool = TRACKS.slice().sort(() => r() - .5);
+  S.src = {kind:'demo', title:al.title, album:al.id}; S.tracks = pool.slice(0, 7).map(t => ({title:t, artist:al.artist, dur:150 + Math.round(r() * 140)})); S.idx = 0; S.t = 0; S.dispP = 0;
+  S.albumMode = true; renderJList();
+  // In the app, this is where PHONY tells Spotify to play the album.
+  insert(ALBUM_TAPE); renderBoxes();
+  setTimeout(() => { if (!S.playing){ play(); sfx('latch'); syncKeys(); } }, 600);
+}
+function showBox(){
+  if (N){ readBox(); N.boxSync(false); }
+  renderBoxes();
+  if (S.open) $('.lid').classList.add('boxopen'); else $('#cover').classList.add('boxopen');
+}
+function hideBox(){ $('.lid').classList.remove('boxopen'); $('#cover').classList.remove('boxopen'); }
+// demo: Spotify just played a whole album; it gets a case at the top of box 1
+let moreI = 0;
+window.phonyBoxNew = () => {
+  const al = MORE[moreI++ % MORE.length]; if (CASES.find(c => c.id === al.id)) return;
+  CASES.unshift(al); renderBoxes(al.id);
+  if (!S.ejected){ S.ejected = true; pause(); sfx('eject'); syncKeys(); showBox(); renderBoxes(al.id); }
+};
+window.phonyEject = () => { ensureAudio(); if (!S.ejected) eject(); };
 
 /* ---------- boot ---------- */
 applyFx(); setVol(N ? Math.max(0, N.getVolume()) : S.vol); buildShelves(); renderJList(); tapeChanged(); layout();

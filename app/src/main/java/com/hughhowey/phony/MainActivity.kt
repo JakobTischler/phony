@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var web: WebView
     private lateinit var library: Library
     private lateinit var remote: RemoteWatcher
+    private lateinit var box: SpotifyBox
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private val main = Handler(Looper.getMainLooper())
@@ -80,6 +81,8 @@ class MainActivity : ComponentActivity() {
 
         library = Library(this)
         remote = RemoteWatcher(this)
+        box = SpotifyBox(this) { js("window.phonyBoxChanged && window.phonyBoxChanged()") }
+        intent?.data?.let { box.handleRedirect(it) }
         audio = getSystemService(AudioManager::class.java)
         lockOrientation()
 
@@ -150,10 +153,20 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         library.invalidate()
         refreshPage()
+        box.sync(false)
     }
+
+    // Spotify's sign-in page comes back here (phony://callback).
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.data?.let { box.handleRedirect(it) }
+    }
+
+    private fun js(code: String) { main.post { if (::web.isInitialized) web.evaluateJavascript(code, null) } }
 
     override fun onDestroy() {
         main.removeCallbacks(tick)
+        box.release()
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
         web.destroy()
@@ -272,6 +285,18 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun getRemoteArt(): String = remote.artDataUrl()
 
         @JavascriptInterface fun remoteCmd(cmd: String, arg: String) = onMain { remote.command(cmd, arg) }
+
+        // ----- the tape box: albums saved in Spotify -----
+        @JavascriptInterface fun spotifyStatus(): String = box.statusJson()
+        @JavascriptInterface fun spotifyLogin() = onMain { box.startLogin() }
+        @JavascriptInterface fun boxSync(force: Boolean) = box.sync(force)
+        @JavascriptInterface fun getBox(): String = box.boxJson()
+        @JavascriptInterface fun getCover(id: String): String = box.coverDataUrl(id)
+
+        /** Tell the Spotify app to play an album; answers window.phonyPlayed(ok, message). */
+        @JavascriptInterface fun playAlbum(uri: String) = onMain {
+            box.play(uri) { ok, msg -> js("window.phonyPlayed && window.phonyPlayed($ok, ${org.json.JSONObject.quote(msg)})") }
+        }
 
         // ----- feel -----
         @JavascriptInterface
