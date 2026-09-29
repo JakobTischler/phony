@@ -976,6 +976,8 @@ $('#reset').addEventListener('click', () => { ensureAudio(); S.cOff = S.a2; sfx(
 
 /* ---------- album mode: a whole album gets the worn album tape ---------- */
 function setAlbum(title, artist, dataUrl, key){
+  // on a skip, the next song's cover arrives a moment after its title; keep this album's cover until then
+  if (!dataUrl && ALBUM.img && sameName(title, ALBUM.title)) return;
   ALBUM.title = title || 'Untitled'; ALBUM.artist = artist || '';
   const done = () => { refreshShells(); if (S.tape === ALBUM_TAPE) tapeChanged(); buildShelves(); };
   if (key === ALBUM.key){ done(); return; }
@@ -1265,8 +1267,7 @@ function readBox(){
   loadCovers();
 }
 window.phonyBoxChanged = () => { readBox(); rerenderSoon(); };
-// for now PHONY says how it got Spotify to switch (or why it couldn't), to help sort out the connection
-window.phonyPlayed = (ok, msg) => { toast(ok ? 'Spotify switched albums: ' + msg : msg); };
+window.phonyPlayed = (ok, msg) => { if (!ok && msg) toast(msg); };
 
 function coverArt(al, w, h, bare){
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
