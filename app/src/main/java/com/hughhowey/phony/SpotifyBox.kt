@@ -24,12 +24,13 @@ import java.security.SecureRandom
  * - Playing an album uses Spotify's App Remote, which tells the Spotify app on
  *   the phone what to play. The first time, Spotify asks you to allow it.
  */
-class SpotifyBox(private val ctx: Context, private val onChange: () -> Unit) {
+class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatcher, private val onChange: () -> Unit) {
 
     companion object {
         const val CLIENT_ID = "e46b23f44fee4ddfb565d5a78ded8345"
         const val REDIRECT = "phony://callback"
-        private const val SCOPES = "user-library-read"
+        private const val SCOPES = "user-library-read user-modify-playback-state user-read-playback-state user-read-currently-playing"
+        private const val PLAY_SCOPE = "user-modify-playback-state"
     }
 
     private val prefs = ctx.getSharedPreferences("spotify", Context.MODE_PRIVATE)
@@ -44,6 +45,8 @@ class SpotifyBox(private val ctx: Context, private val onChange: () -> Unit) {
     private var remote: SpotifyAppRemote? = null
 
     val signedIn get() = prefs.getString("refresh", null) != null
+    /** Signed in with permission to change what Spotify plays (added after the first version). */
+    val canPlay get() = signedIn && (prefs.getString("scope", "") ?: "").contains(PLAY_SCOPE)
 
     fun statusJson(): String = JSONObject()
         .put("signedIn", signedIn)
@@ -51,6 +54,7 @@ class SpotifyBox(private val ctx: Context, private val onChange: () -> Unit) {
         .put("message", message)
         .put("updated", if (boxFile.exists()) boxFile.lastModified() else 0L)
         .put("spotify", SpotifyAppRemote.isSpotifyInstalled(ctx))
+        .put("canPlay", canPlay)
         .toString()
 
     fun boxJson(): String = if (boxFile.exists()) boxFile.readText() else "[]"
@@ -101,6 +105,7 @@ class SpotifyBox(private val ctx: Context, private val onChange: () -> Unit) {
         access = j.getString("access_token")
         accessUntil = System.currentTimeMillis() + (j.optLong("expires_in", 3600) - 60) * 1000
         j.optString("refresh_token").takeIf { it.isNotEmpty() }?.let { prefs.edit().putString("refresh", it).apply() }
+        j.optString("scope").takeIf { it.isNotEmpty() }?.let { prefs.edit().putString("scope", it).apply() }
     }
 
     private fun accessToken(): String {
@@ -225,21 +230,118 @@ class SpotifyBox(private val ctx: Context, private val onChange: () -> Unit) {
 
     // ---------- playing an album ----------
 
-    fun play(uri: String, done: (Boolean, String) -> Unit) {
-        remote?.let { r ->
-            if (r.isConnected) { r.playerApi.play(uri).setResultCallback { done(true, "") }.setErrorCallback { done(false, "Spotify couldn't play that album.") }; return }
+    /**
+     * Start an album. Three ways, in order, stopping at the first that works:
+     * 1. Spotify's Web API, on this phone's Spotify (needs the play permission).
+     * 2. Android's media controls: ask Spotify's player to play the album's link.
+     * 3. Spotify's App Remote.
+     * done() runs on the main thread; on failure the message says what each way answered.
+     */
+    fun play(uri: String, title: String, done: (Boolean, String) -> Unit) {
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        Thread {
+            val notes = mutableListOf<String>()
+            var web: String? = "web: not allowed yet"
+            if (canPlay) {
+                web = try { playWeb(uri); null } catch (e: Exception) { "web: " + (e.message ?: e.javaClass.simpleName) }
+            }
+            if (web == null) { main.post { done(true, "") }; return@Thread }
+            notes += web
+            main.post {
+                if (remoteWatcher.playFromUri(uri)) {
+                    // give Spotify a moment, then check it actually switched
+                    main.postDelayed({
+                        if (remoteWatcher.playingAlbum(title)) done(true, "")
+                        else { notes += "media controls: no change"; viaAppRemote(uri, notes, done) }
+                    }, 2500)
+                } else { notes += "media controls: Spotify isn't open"; viaAppRemote(uri, notes, done) }
+            }
+        }.start()
+    }
+
+    private fun playWeb(uri: String) {
+        val devices = JSONObject(api("GET", "https://api.spotify.com/v1/me/player/devices", null)).optJSONArray("devices") ?: JSONArray()
+        var id: String? = null
+        for (i in 0 until devices.length()) { val d = devices.getJSONObject(i); if (d.optBoolean("is_active")) { id = d.optString("id"); break } }
+        if (id == null) for (i in 0 until devices.length()) { val d = devices.getJSONObject(i); if (d.optString("type").equals("Smartphone", true)) { id = d.optString("id"); break } }
+        val q = if (id.isNullOrEmpty()) "" else "?device_id=" + enc(id)
+        api("PUT", "https://api.spotify.com/v1/me/player/play$q", JSONObject().put("context_uri", uri).toString())
+    }
+
+    private fun viaAppRemote(uri: String, notes: MutableList<String>, done: (Boolean, String) -> Unit) {
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        var answered = false
+        val finish = { ok: Boolean, note: String ->
+            if (!answered) {
+                answered = true
+                if (ok) done(true, "") else { notes += "app remote: $note"; done(false, "Spotify didn't switch albums (" + notes.joinToString("; ") + ")") }
+            }
         }
-        if (!SpotifyAppRemote.isSpotifyInstalled(ctx)) { done(false, "Install Spotify to play the tapes in the box."); return }
+        main.postDelayed({ finish(false, "no answer") }, 10_000)
+        val go = { r: SpotifyAppRemote ->
+            r.playerApi.play(uri).setResultCallback { finish(true, "") }.setErrorCallback { t -> finish(false, t.javaClass.simpleName + " " + (t.message ?: "")) }
+        }
+        remote?.let { r -> if (r.isConnected) { go(r); return } }
+        if (!SpotifyAppRemote.isSpotifyInstalled(ctx)) { finish(false, "Spotify isn't installed"); return }
         val params = ConnectionParams.Builder(CLIENT_ID).setRedirectUri(REDIRECT).showAuthView(true).build()
         SpotifyAppRemote.connect(ctx, params, object : Connector.ConnectionListener {
-            override fun onConnected(r: SpotifyAppRemote) {
-                remote = r
-                r.playerApi.play(uri).setResultCallback { done(true, "") }.setErrorCallback { done(false, "Spotify couldn't play that album.") }
-            }
-            override fun onFailure(t: Throwable) {
-                done(false, "Couldn't reach the Spotify app. Open Spotify once, then try again.")
-            }
+            override fun onConnected(r: SpotifyAppRemote) { remote = r; go(r) }
+            override fun onFailure(t: Throwable) { finish(false, t.javaClass.simpleName + " " + (t.message ?: "")) }
         })
+    }
+
+    // ---------- what Spotify is playing (is it an album?) ----------
+
+    @Volatile var contextJson = ""; private set
+    @Volatile private var watching = false
+
+    /** While PHONY is on screen, ask Spotify every few seconds whether it's playing an album. */
+    fun watch(on: Boolean) {
+        if (on == watching) return
+        watching = on
+        if (!on) return
+        Thread {
+            while (watching) {
+                if (canPlay && remoteWatcher.enabled) {
+                    contextJson = try {
+                        val body = api("GET", "https://api.spotify.com/v1/me/player/currently-playing", null)
+                        if (body.isBlank()) "" else {
+                            val j = JSONObject(body)
+                            val ctxObj = j.optJSONObject("context")
+                            val alb = j.optJSONObject("item")?.optJSONObject("album")
+                            JSONObject()
+                                .put("type", ctxObj?.optString("type") ?: "")
+                                .put("uri", ctxObj?.optString("uri") ?: "")
+                                .put("album", alb?.optString("name") ?: "")
+                                .put("albumUri", alb?.optString("uri") ?: "")
+                                .toString()
+                        }
+                    } catch (e: Exception) { contextJson }
+                }
+                try { Thread.sleep(4000) } catch (e: InterruptedException) { }
+            }
+        }.start()
+    }
+
+    private fun api(method: String, u: String, body: String?): String {
+        val c = URL(u).openConnection() as HttpURLConnection
+        c.requestMethod = method; c.connectTimeout = 10000; c.readTimeout = 15000
+        c.setRequestProperty("Authorization", "Bearer " + accessToken())
+        if (body != null) {
+            c.doOutput = true
+            c.setRequestProperty("Content-Type", "application/json")
+            c.outputStream.use { it.write(body.toByteArray()) }
+        } else if (method == "PUT") c.setFixedLengthStreamingMode(0)
+        try {
+            val code = c.responseCode
+            if (code == 401) access = null
+            if (code == 204) return ""
+            if (code !in 200..299) {
+                val msg = try { JSONObject(c.errorStream.bufferedReader().use { it.readText() }).optJSONObject("error")?.optString("message") } catch (e: Exception) { null }
+                throw IllegalStateException("$code" + if (msg.isNullOrEmpty()) "" else " $msg")
+            }
+            return c.inputStream.bufferedReader().use { it.readText() }
+        } finally { c.disconnect() }
     }
 
     fun release() { remote?.let { SpotifyAppRemote.disconnect(it) }; remote = null }

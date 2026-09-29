@@ -121,6 +121,26 @@ class RemoteWatcher(private val ctx: Context) {
         return artCache
     }
 
+    private fun spotify(): MediaController? = try {
+        ctx.getSystemService(MediaSessionManager::class.java)
+            .getActiveSessions(ComponentName(ctx, PhonyNotificationListener::class.java))
+            .firstOrNull { it.packageName.startsWith("com.spotify.music") }
+    } catch (e: SecurityException) { null }
+
+    /** Ask Spotify's player to play a spotify: link. False if Spotify has no player open. */
+    fun playFromUri(uri: String): Boolean {
+        val c = spotify() ?: return false
+        return try { c.transportControls.playFromUri(android.net.Uri.parse(uri), android.os.Bundle()); true } catch (e: Exception) { false }
+    }
+
+    /** Whether Spotify's player now shows a song from this album. */
+    fun playingAlbum(title: String): Boolean {
+        val c = spotify() ?: return false
+        val md = try { c.metadata } catch (e: Exception) { null } ?: return false
+        val album = md.getString(MediaMetadata.METADATA_KEY_ALBUM) ?: return false
+        return album.trim().equals(title.trim(), ignoreCase = true)
+    }
+
     /** Called on the main thread. */
     fun command(cmd: String, arg: String) {
         val tc = controller?.transportControls ?: return

@@ -989,7 +989,8 @@ function setAlbumMode(on){
 }
 
 /* ---------- phone bridge: local library and other apps ---------- */
-let pollAt = 0, remoteMissing = 0;
+let pollAt = 0, remoteMissing = 0, ctxAt = 0;
+const sameName = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
 function pollNative(now){
   if (!N || now - pollAt < 33) return; pollAt = now;
   if (isLocal()){
@@ -1013,20 +1014,29 @@ function pollNative(now){
       S.src.app = st.app;
       const prevAlbum = R.hist.length ? R.hist[R.hist.length - 1].album : '';
       // an album is playing if the app names its queue after the album, or two songs in a row share one
-      const sameName = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
-      setAlbumMode(!!st.album && (sameName(st.queueTitle, st.album) || sameName(prevAlbum, st.album) || (!!S.boxAlbum && sameName(S.boxAlbum.title, st.album))));
+      setAlbumMode(!!st.album && (sameName(st.queueTitle, st.album) || sameName(prevAlbum, st.album) || (!!S.boxAlbum && sameName(S.boxAlbum.title, st.album)) || spotifySaysAlbum(st.album)));
       buildRemoteTracks(st.queue || []);
     }
     // cover art often arrives a moment after the track changes
     if (st.artKey !== R.artKey){ R.artKey = st.artKey; setAlbum(st.album, st.albumArtist || st.artist, st.hasArt ? N.getRemoteArt() : '', st.artKey); }
+    // Spotify itself says whether it's playing an album; checked every second
+    if (now - ctxAt > 1000){ ctxAt = now; if (!S.albumMode && spotifySaysAlbum(st.album)) setAlbumMode(true); }
     if (!S.cue) S.t = st.pos / 1000;
     if (st.dur > 0) R.cur.dur = st.dur / 1000;
     if (now - S.cmdAt > 800 && st.playing !== S.playing){ S.playing = st.playing; syncKeys(); }
   }
 }
+function spotifySaysAlbum(album){
+  if (!N || !N.spotifyContext) return false;
+  let cx = null; try { const raw = N.spotifyContext(); cx = raw ? JSON.parse(raw) : null; } catch (e) {}
+  return !!cx && cx.type === 'album' && sameName(cx.album, album);
+}
 function buildRemoteTracks(queue){
   const R = S.r, hist = R.hist.slice(-8);
-  S.tracks = [...hist, R.cur, ...queue.slice(0, 20).map(q => ({title:q.title, artist:q.artist || '', queueId:q.id}))];
+  // Spotify's queue starts with the song that's playing (sometimes after the ones already played); list only what comes next
+  const at = queue.findIndex(q => sameName(q.title, R.cur.title));
+  const upNext = at >= 0 ? queue.slice(at + 1) : queue;
+  S.tracks = [...hist, R.cur, ...upNext.slice(0, 20).map(q => ({title:q.title, artist:q.artist || '', queueId:q.id}))];
   S.idx = hist.length; renderJList(); trackChanged();
 }
 
@@ -1325,6 +1335,7 @@ function statusCard(){
   const note = (text, onClick) => { const b = document.createElement('button'); b.className = 'case note'; b.innerHTML = '<span class="sp"><span class="hw"></span></span>'; b.querySelector('.hw').textContent = text; if (onClick) b.addEventListener('click', () => { ensureAudio(); sfx('tick'); onClick(); }); else b.disabled = true; return b; };
   if (!boxStatus.spotify && N) return note('Install Spotify to fill the box.');
   if (!boxStatus.signedIn) return note('Sign in to Spotify to fill the box.', () => N.spotifyLogin());
+  if (N && !boxStatus.canPlay) return note('Tap here to let PHONY change what Spotify plays.', () => N.spotifyLogin());
   if (boxStatus.state === 'error' && !CASES.length) return note((boxStatus.message || 'Couldn\'t reach Spotify.') + ' Tap to try again.', () => { N.boxSync(true); });
   if (!CASES.length && boxStatus.state === 'loading') return note('Fetching your albums…');
   if (!CASES.length) return note('Save an album in Spotify and it shows up here.', () => N.boxSync(true));
@@ -1335,14 +1346,15 @@ function renderBox(bay, fresh){
   inPlayer = currentCaseId();
   const wrap = document.createElement('div'); wrap.className = 'boxes';
   const sc = statusCard();
-  const n = Math.max(1, Math.ceil(CASES.length / PER_BOX)) + (CASES.length % PER_BOX === 0 ? 1 : 0);
+  const items = sc && boxStatus.signedIn && CASES.length ? [sc, ...CASES] : (sc ? [sc] : CASES);
+  const n = Math.max(1, Math.ceil(items.length / PER_BOX)) + (items.length % PER_BOX === 0 ? 1 : 0);
   for (let k = 0; k < n; k++){
     const box = document.createElement('div'); box.className = 'box';
     const dy = document.createElement('span'); dy.className = 'dymo'; dy.textContent = String(k + 1); box.append(dy);
     const sl = document.createElement('div'); sl.className = 'slots';
     for (let j = 0; j < PER_BOX; j++){
-      if (sc && k === 0 && j === 0){ sl.append(sc); continue; }
-      const al = CASES[k * PER_BOX + j];
+      const al = items[k * PER_BOX + j];
+      if (al instanceof HTMLElement){ sl.append(al); continue; }
       if (!al){ const e = document.createElement('div'); e.className = 'slot0'; sl.append(e); continue; }
       if (inPlayer === al.id){ const g = document.createElement('div'); g.className = 'gap'; g.innerHTML = '<i>in the player</i>'; sl.append(g); continue; }
       const el = caseEl(al, k * PER_BOX + j); if (fresh === al.id) el.classList.add('fresh'); sl.append(el);
@@ -1398,7 +1410,7 @@ function showCase(al, bay){
 function loadFromBox(al){
   S.boxAlbum = {id:al.id, title:al.title};
   if (N){
-    N.playAlbum(al.uri);
+    N.playAlbum(al.uri, al.title);
     if (S.tape === ALBUM_TAPE) S.tape = S.userTape; // no second eject: this tape replaces it
     if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true);
     else toast('Turn on notification access for PHONY so it can follow Spotify.');

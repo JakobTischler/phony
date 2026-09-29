@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
 
         library = Library(this)
         remote = RemoteWatcher(this)
-        box = SpotifyBox(this) { js("window.phonyBoxChanged && window.phonyBoxChanged()") }
+        box = SpotifyBox(this, remote) { js("window.phonyBoxChanged && window.phonyBoxChanged()") }
         intent?.data?.let { box.handleRedirect(it) }
         audio = getSystemService(AudioManager::class.java)
         lockOrientation()
@@ -154,6 +154,12 @@ class MainActivity : ComponentActivity() {
         library.invalidate()
         refreshPage()
         box.sync(false)
+        box.watch(true)
+    }
+
+    override fun onPause() {
+        box.watch(false)
+        super.onPause()
     }
 
     // Spotify's sign-in page comes back here (phony://callback).
@@ -292,10 +298,12 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun boxSync(force: Boolean) = box.sync(force)
         @JavascriptInterface fun getBox(): String = box.boxJson()
         @JavascriptInterface fun getCover(id: String): String = box.coverDataUrl(id)
+        /** What Spotify says it's playing: {type: "album"|"playlist"|…, uri, album, albumUri}, or "". */
+        @JavascriptInterface fun spotifyContext(): String = box.contextJson
 
         /** Tell the Spotify app to play an album; answers window.phonyPlayed(ok, message). */
-        @JavascriptInterface fun playAlbum(uri: String) = onMain {
-            box.play(uri) { ok, msg -> js("window.phonyPlayed && window.phonyPlayed($ok, ${org.json.JSONObject.quote(msg)})") }
+        @JavascriptInterface fun playAlbum(uri: String, title: String) = onMain {
+            box.play(uri, title) { ok, msg -> js("window.phonyPlayed && window.phonyPlayed($ok, ${org.json.JSONObject.quote(msg)})") }
         }
 
         // ----- feel -----
