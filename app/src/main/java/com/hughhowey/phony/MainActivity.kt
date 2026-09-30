@@ -49,6 +49,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var remote: RemoteWatcher
     private lateinit var box: SpotifyBox
     private lateinit var places: Places
+    private lateinit var photos: Photos
+    private lateinit var radio: Radio
+    private val photoResults = java.util.concurrent.ConcurrentHashMap<String, String>()
     private lateinit var notes: LinerNotes
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
@@ -63,6 +66,9 @@ class MainActivity : ComponentActivity() {
             library.invalidate()
             refreshPage()
         }
+
+    private val photoLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPage() }
 
     private val locationLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPage() }
@@ -94,6 +100,12 @@ class MainActivity : ComponentActivity() {
         notes = LinerNotes(this, box) { id -> js("window.phonyNotes && window.phonyNotes(${org.json.JSONObject.quote(id)})") }
         audio = getSystemService(AudioManager::class.java)
         places = Places(this)
+        photos = Photos(this)
+        radio = Radio.get(this).also { r ->
+            r.box = box; r.places = places
+            r.onChange = { js("window.phonyRadio && window.phonyRadio()") }
+        }
+        handleShare(intent)
         lockOrientation()
 
         val assets = WebViewAssetLoader.Builder()
@@ -166,6 +178,7 @@ class MainActivity : ComponentActivity() {
         box.sync(false)
         box.watch(true)
         notes.prefetch()
+        if (::radio.isInitialized) radio.resolveSoon()
     }
 
     override fun onPause() {
@@ -177,6 +190,15 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.data?.let { box.handleRedirect(it) }
+        handleShare(intent)
+    }
+
+    /** Shazam's Share button, pointed at PHONY: the song goes on the radio. */
+    private fun handleShare(i: Intent?) {
+        if (i?.action != Intent.ACTION_SEND) return
+        val text = i.getStringExtra(Intent.EXTRA_TEXT) ?: return
+        if (::radio.isInitialized) radio.fromShare(text)
+        i.action = null
     }
 
     private fun js(code: String) { main.post { if (::web.isInitialized) web.evaluateJavascript(code, null) } }
@@ -342,6 +364,37 @@ class MainActivity : ComponentActivity() {
         /** {lat, lon, at, place} or "" (no permission or no fix yet). */
         @JavascriptInterface fun whereAmI(): String = places.here()
         @JavascriptInterface fun placeName(lat: Double, lon: Double): String = places.name(lat, lon)
+
+        // ----- the radio and the blank tape -----
+        /** Songs heard and waiting for the blank tape: [{key, title, artist, uri, dur, album, at, lat, lon, place, how}]. */
+        @JavascriptInterface fun radioWaiting(): String = radio.waitingJson()
+        @JavascriptInterface fun radioDrop(key: String) = radio.drop(key)
+        @JavascriptInterface fun radioNotice(): String = org.json.JSONObject().put("id", radio.noticeId).put("text", radio.notice).toString()
+        /** Test hook: put a song on the radio by name. */
+        @JavascriptInterface fun radioHeard(title: String, artist: String) = radio.heard(title, artist, "test")
+        @JavascriptInterface fun playTrack(uri: String, title: String) = onMain {
+            box.play(uri, title) { ok, msg -> js("window.phonyPlayed && window.phonyPlayed($ok, ${org.json.JSONObject.quote(msg)})") }
+        }
+        @JavascriptInterface fun mixCreate(name: String) = onMain { box.mixCreate(name) { id -> js("window.phonyMixMade && window.phonyMixMade(${org.json.JSONObject.quote(id)})") } }
+        @JavascriptInterface fun mixAdd(id: String, uri: String) = box.mixAdd(id, uri)
+        @JavascriptInterface fun mixRename(id: String, name: String) = box.mixRename(id, name)
+        @JavascriptInterface fun artistNotes(id: String, name: String) = notes.artist(id, name)
+
+        // ----- camera photos for a mixtape's J-card -----
+        @JavascriptInterface fun hasPhotos(): Boolean = photos.hasPermission()
+        @JavascriptInterface fun requestPhotos() = onMain { photoLauncher.launch(photos.permission) }
+        /** req: {near:[t…]} or {from, to, n}; answers window.phonyPhotos(id), then takePhotos(id). */
+        @JavascriptInterface fun fetchPhotos(id: String, req: String) {
+            Thread {
+                val r = try { org.json.JSONObject(req) } catch (e: Exception) { org.json.JSONObject() }
+                val out = org.json.JSONObject()
+                r.optJSONArray("near")?.let { ts -> val a = org.json.JSONArray(); for (k in 0 until ts.length()) a.put(photos.near(ts.getLong(k))); out.put("near", a) }
+                if (r.has("from")) out.put("across", org.json.JSONArray(photos.across(r.getLong("from"), r.getLong("to"), r.optInt("n", 6))))
+                photoResults[id] = out.toString()
+                js("window.phonyPhotos && window.phonyPhotos(${org.json.JSONObject.quote(id)})")
+            }.start()
+        }
+        @JavascriptInterface fun takePhotos(id: String): String = photoResults.remove(id) ?: ""
 
         // ----- feel -----
         @JavascriptInterface

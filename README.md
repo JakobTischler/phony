@@ -28,6 +28,16 @@ Under the boxes is a drawer of playlist tapes: your twenty most recently played 
 
 "Recently played" comes from Spotify's recent history plus every playlist PHONY sees playing; if that's fewer than twelve, the rest are your playlists in Spotify's order. The drawer needs one more Spotify sign-in to read playlists (tap the note in the drawer).
 
+## The radio and the blank tape
+
+Hear a song you love out in the world, name it with Shazam, and it goes "on the radio": up to three songs wait there (a fourth pushes the oldest off). PHONY catches them three ways: Shazam's notification, Shazam's **Share** button pointed at PHONY, or Shazam's own "My Shazam Tracks" playlist in Spotify if Shazam is linked to Spotify.
+
+The blank tape sits at the top of the drawer with a red REC sticker. Put it in and it plays the oldest song waiting. Only a full listen records it: pause and wind back all you like, but skip it or wind forward and it's gone for good. After each song the tape stops; if more are waiting it records the next. A blank holds 90 minutes (45 a side). Play it any time like any other tape; stopped at the end of what's on it, ▶ records whatever's waiting.
+
+When it's full, press **■** and write its name on the spine with the pencil (**RUB OUT** turns the pencil over). It goes into the MY TAPES box, spine out, and a fresh blank drops into the drawer. Each tape is a private playlist in Spotify too.
+
+A mixtape's J-card has your writing on the spine, the songs with where and when you heard each one, sleeve notes pairing each song with the photo you took nearest that moment and a few lines about the artist, the words, and its ports of call. Photos stay on the phone; the card asks once.
+
 ## Sides
 
 An album plays like a cassette: Side A is the first half of the songs. When Side A runs out the tape stops; press **■** to flip it and **▶** to play Side B. The silver digital shell has auto reverse and carries on by itself.

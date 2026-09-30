@@ -155,6 +155,24 @@ class LinerNotes(private val ctx: Context, private val box: SpotifyBox, private 
         return if (cut > max / 2) text.substring(0, cut + 1) else text.substring(0, max) + "…"
     }
 
+    // ---------- a few lines about an artist (for the songs on a mixtape) ----------
+
+    fun artist(id: String, name: String) {
+        Thread {
+            val key = "ar:" + norm(firstArtist(name))
+            var s = read("a", key)
+            if (s == null && online()) {
+                netFailed.set(false)
+                val out = JSONObject().put("artist", name)
+                try { wikiBand(firstArtist(name))?.let { out.put("about", trim(it.first, 460)) } } catch (e: Exception) { }
+                s = out.toString()
+                if (!netFailed.get()) write("a", key, s)
+            }
+            results[id] = s ?: JSONObject().put("artist", name).toString()
+            ready(id)
+        }.start()
+    }
+
     // ---------- the words ----------
 
     fun lyrics(id: String, track: String, artist: String, album: String, durSec: Int) {

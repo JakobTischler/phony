@@ -31,10 +31,11 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         const val CLIENT_ID = "e46b23f44fee4ddfb565d5a78ded8345"
         const val REDIRECT = "phony://callback"
         private const val SCOPES = "user-library-read user-modify-playback-state user-read-playback-state user-read-currently-playing " +
-            "playlist-read-private playlist-read-collaborative user-read-recently-played"
+            "playlist-read-private playlist-read-collaborative user-read-recently-played playlist-modify-private"
         private const val PLAY_SCOPE = "user-modify-playback-state"
         private const val LIST_SCOPES = "playlist-read-private user-read-recently-played"
         const val DRAWER = 20
+        private const val MIX_SCOPE = "playlist-modify-private"
     }
 
     private val prefs = ctx.getSharedPreferences("spotify", Context.MODE_PRIVATE)
@@ -53,6 +54,8 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     /** Signed in with permission to change what Spotify plays (added after the first version). */
     val canPlay get() = signedIn && (prefs.getString("scope", "") ?: "").contains(PLAY_SCOPE)
     /** Signed in with permission to read playlists and what played lately (added with the playlist drawer). */
+    /** Signed in with permission to make the mixtape playlists (added with the blank tape). */
+    val canMix get() = signedIn && (prefs.getString("scope", "") ?: "").contains(MIX_SCOPE)
     val canPlaylists get() = signedIn && LIST_SCOPES.split(" ").all { (prefs.getString("scope", "") ?: "").contains(it) }
 
     fun statusJson(): String = JSONObject()
@@ -63,6 +66,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         .put("spotify", SpotifyAppRemote.isSpotifyInstalled(ctx))
         .put("canPlay", canPlay)
         .put("canPlaylists", canPlaylists)
+        .put("canMix", canMix)
         .put("notice", notice)
         .put("noticeId", noticeId)
         .toString()
@@ -272,7 +276,13 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         while (next != null && pages < 6) {
             val j = JSONObject(get(next)); pages++
             val items = j.optJSONArray("items") ?: JSONArray()
-            for (i in 0 until items.length()) { val pl = items.optJSONObject(i) ?: continue; playlistEntry(pl)?.let { e -> lib.add(e) } }
+            for (i in 0 until items.length()) {
+                val pl = items.optJSONObject(i) ?: continue
+                val name = pl.optString("name")
+                if (name.equals("My Shazam Tracks", true)) { shazamList = pl.optString("id"); continue }
+                if (pl.optString("id") in mixIds()) continue
+                playlistEntry(pl)?.let { e -> lib.add(e) }
+            }
             next = j.optString("next").takeIf { it.isNotEmpty() && it != "null" }
         }
         // when each playlist last played: Spotify's list (last 50 songs) and PHONY's own notes
@@ -295,7 +305,8 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             val id = u.substringAfterLast(':')
             try { playlistEntry(JSONObject(get("https://api.spotify.com/v1/playlists/$id?fields=id,uri,name,owner(display_name),items(total),tracks(total)")))?.let { e -> known[u] = e } } catch (e: Exception) { }
         }
-        val recent = played.keys.filter { it in known }.sortedByDescending { played[it] }
+        shazamList?.let { id -> try { watchShazam(id) } catch (e: Exception) { } }
+        val recent = played.keys.filter { it in known && it.substringAfterLast(':') !in mixIds() }.sortedByDescending { played[it] }
         val order = (recent + lib.map { it.getString("uri") }).distinct().take(DRAWER)
         val out = JSONArray()
         order.forEach { u -> out.put(known[u]!!.put("played", played[u] ?: 0L)) }
@@ -334,6 +345,70 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         onChange()
     }
 
+    // ---------- the radio and the blank tape ----------
+
+    @Volatile private var shazamList: String? = null
+
+    /** New songs in Shazam's own Spotify playlist go on the radio. The first look only notes where the list is up to. */
+    private fun watchShazam(id: String) {
+        val j = JSONObject(get("https://api.spotify.com/v1/playlists/$id/items?limit=50&fields=items(added_at,item(name,uri,duration_ms,artists(name),album(name)),track(name,uri,duration_ms,artists(name),album(name)))"))
+        val items = j.optJSONArray("items") ?: return
+        val mark = prefs.getLong("shazamMark", 0L)
+        var newest = mark
+        for (i in 0 until items.length()) {
+            val it = items.getJSONObject(i)
+            val at = try { java.time.Instant.parse(it.optString("added_at")).toEpochMilli() } catch (e: Exception) { 0L }
+            if (at > newest) newest = at
+            if (mark == 0L || at <= mark) continue
+            val t = it.optJSONObject("item") ?: it.optJSONObject("track") ?: continue
+            val ar = t.optJSONArray("artists")?.optJSONObject(0)?.optString("name") ?: ""
+            Radio.get(ctx).heard(t.optString("name"), ar, "shazam list", t.optString("uri"), t.optLong("duration_ms") / 1000, t.optJSONObject("album")?.optString("name") ?: "")
+        }
+        prefs.edit().putLong("shazamMark", if (mark == 0L) maxOf(newest, System.currentTimeMillis()) else newest).apply()
+    }
+
+    /** A song heard on the radio, on Spotify: {uri, title, artist, album, dur} or null. */
+    fun findTrack(title: String, artist: String): JSONObject? {
+        if (!signedIn) return null
+        val clean = { x: String -> x.replace(Regex("\\s*[(\\[][^)\\]]*[)\\]]"), "").trim() }
+        val q = enc(if (artist.isNotBlank()) "track:${clean(title)} artist:${artist.split(",", "&").first().trim()}" else clean(title))
+        val items = JSONObject(api("GET", "https://api.spotify.com/v1/search?type=track&limit=5&q=$q", null)).optJSONObject("tracks")?.optJSONArray("items") ?: return null
+        if (items.length() == 0) return null
+        var best = items.getJSONObject(0)
+        for (i in 0 until items.length()) { val c = items.getJSONObject(i); if (c.optString("name").equals(title.trim(), true)) { best = c; break } }
+        return JSONObject().put("uri", best.optString("uri")).put("title", best.optString("name"))
+            .put("artist", best.optJSONArray("artists")?.optJSONObject(0)?.optString("name") ?: "")
+            .put("album", best.optJSONObject("album")?.optString("name") ?: "").put("dur", best.optLong("duration_ms") / 1000)
+    }
+
+    private fun mixIds(): Set<String> = (prefs.getString("mixIds", "") ?: "").split(",").filter { it.isNotEmpty() }.toSet()
+
+    /** A new mixtape playlist (private). done(id or "") on the main thread. */
+    fun mixCreate(name: String, done: (String) -> Unit) {
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        Thread {
+            val id = try {
+                JSONObject(api("POST", "https://api.spotify.com/v1/me/playlists", JSONObject().put("name", name).put("public", false)
+                    .put("description", "Recorded off the radio with PHONY.").toString())).optString("id")
+            } catch (e: Exception) { "" }
+            if (id.isNotEmpty()) prefs.edit().putString("mixIds", (mixIds() + id).joinToString(",")).apply()
+            main.post { done(id) }
+        }.start()
+    }
+
+    /** Put a recorded song on the end of a mixtape playlist. */
+    fun mixAdd(id: String, uri: String) {
+        Thread {
+            val body = JSONObject().put("uris", JSONArray().put(uri)).toString()
+            try { api("POST", "https://api.spotify.com/v1/playlists/$id/items", body) }
+            catch (e: Exception) { try { api("POST", "https://api.spotify.com/v1/playlists/$id/tracks", body) } catch (e2: Exception) { } }
+        }.start()
+    }
+
+    fun mixRename(id: String, name: String) {
+        Thread { try { api("PUT", "https://api.spotify.com/v1/playlists/$id", JSONObject().put("name", name).toString()) } catch (e: Exception) { } }.start()
+    }
+
     // ---------- playing an album ----------
 
     /**
@@ -345,6 +420,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
      */
     fun play(uri: String, title: String, done: (Boolean, String) -> Unit) {
         val isList = uri.startsWith("spotify:playlist:")
+        val isSong = uri.startsWith("spotify:track:")
         if (isList) markPlayed(uri)
         val main = android.os.Handler(android.os.Looper.getMainLooper())
         Thread {
@@ -359,7 +435,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
                 if (remoteWatcher.playFromUri(uri)) {
                     // give Spotify a moment, then check it actually switched
                     main.postDelayed({
-                        if (if (isList) remoteWatcher.playingQueue(title) else remoteWatcher.playingAlbum(title)) done(true, "media controls (" + notes.joinToString("; ") + ")")
+                        if (if (isSong) remoteWatcher.playingTitle(title) else if (isList) remoteWatcher.playingQueue(title) else remoteWatcher.playingAlbum(title)) done(true, "media controls (" + notes.joinToString("; ") + ")")
                         else { notes += "media controls: no change"; viaAppRemote(uri, notes, done) }
                     }, 2500)
                 } else { notes += "media controls: Spotify isn't open"; viaAppRemote(uri, notes, done) }
@@ -373,7 +449,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         for (i in 0 until devices.length()) { val d = devices.getJSONObject(i); if (d.optBoolean("is_active")) { id = d.optString("id"); break } }
         if (id == null) for (i in 0 until devices.length()) { val d = devices.getJSONObject(i); if (d.optString("type").equals("Smartphone", true)) { id = d.optString("id"); break } }
         val q = if (id.isNullOrEmpty()) "" else "?device_id=" + enc(id)
-        val body = JSONObject().put("context_uri", uri)
+        val body = if (uri.startsWith("spotify:track:")) JSONObject().put("uris", JSONArray().put(uri)) else JSONObject().put("context_uri", uri)
         if (offset >= 0) body.put("offset", JSONObject().put("position", offset))
         api("PUT", "https://api.spotify.com/v1/me/player/play$q", body.toString())
     }

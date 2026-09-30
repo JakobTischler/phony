@@ -15,10 +15,21 @@ import org.json.JSONObject
 
 /**
  * Android only lets an app see other apps' now-playing info once the user turns on
- * notification access for it. PHONY never reads notifications; this class exists so
- * that switch can be turned on.
+ * notification access for it. That switch is this class. The one app whose notifications
+ * PHONY reads is Shazam: a song it names goes on the radio for the blank tape.
  */
-class PhonyNotificationListener : NotificationListenerService()
+class PhonyNotificationListener : NotificationListenerService() {
+    override fun onNotificationPosted(sbn: android.service.notification.StatusBarNotification?) {
+        val n = sbn ?: return
+        if (!n.packageName.startsWith("com.shazam")) return
+        val x = n.notification?.extras ?: return
+        Radio.get(this).fromNotification(n.packageName,
+            x.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString(),
+            x.getCharSequence(android.app.Notification.EXTRA_TEXT)?.toString(),
+            x.getCharSequence(android.app.Notification.EXTRA_BIG_TEXT)?.toString(),
+            n.isOngoing)
+    }
+}
 
 /** Follows whatever another app (Spotify, YouTube Music, …) is playing and drives it. */
 class RemoteWatcher(private val ctx: Context) {
@@ -139,6 +150,13 @@ class RemoteWatcher(private val ctx: Context) {
         val md = try { c.metadata } catch (e: Exception) { null } ?: return false
         val album = md.getString(MediaMetadata.METADATA_KEY_ALBUM) ?: return false
         return album.trim().equals(title.trim(), ignoreCase = true)
+    }
+
+    /** Whether Spotify's player now shows this song. */
+    fun playingTitle(title: String): Boolean {
+        val c = spotify() ?: return false
+        val md = try { c.metadata } catch (e: Exception) { null } ?: return false
+        return (md.getString(MediaMetadata.METADATA_KEY_TITLE) ?: return false).trim().equals(title.trim(), ignoreCase = true)
     }
 
     /** Whether Spotify's player now names its queue after this playlist. */
