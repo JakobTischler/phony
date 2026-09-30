@@ -5,6 +5,10 @@ A portable cassette player for the Galaxy Z Fold 8.
 - **Closed** (cover screen): the front of the player. Reels turn in the window, the keys on the silver side panel click, the tape pack moves from reel to reel as the side plays.
 - **Open** (inner screen): the J-card with the tracklist, tape counter and tape shelf on the left, the cassette filling the bay on the right.
 
+## Shells
+
+PHONY has seven shells: blue, black recorder, pink 80s, clear orange, silver digital, beat-up yellow and clear blush. There's no menu. Each shell hides a spot (a label, a sticker, a rubber band, a loose screw, a button); press and hold it for about a second and the next shell snaps on. A quick tap does nothing. The shell you land on stays.
+
 ## Music
 
 Tap the title at the top of the J-card (open view) to choose:
