@@ -82,9 +82,12 @@ class MainActivity : ComponentActivity() {
 
         library = Library(this)
         remote = RemoteWatcher(this)
-        box = SpotifyBox(this, remote) { js("window.phonyBoxChanged && window.phonyBoxChanged()") }
+        box = SpotifyBox(this, remote) {
+            js("window.phonyBoxChanged && window.phonyBoxChanged()")
+            if (::notes.isInitialized) notes.prefetch()
+        }
         intent?.data?.let { box.handleRedirect(it) }
-        notes = LinerNotes(box) { id -> js("window.phonyNotes && window.phonyNotes(${org.json.JSONObject.quote(id)})") }
+        notes = LinerNotes(this, box) { id -> js("window.phonyNotes && window.phonyNotes(${org.json.JSONObject.quote(id)})") }
         audio = getSystemService(AudioManager::class.java)
         lockOrientation()
 
@@ -157,6 +160,7 @@ class MainActivity : ComponentActivity() {
         refreshPage()
         box.sync(false)
         box.watch(true)
+        notes.prefetch()
     }
 
     override fun onPause() {
@@ -175,6 +179,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         main.removeCallbacks(tick)
         box.release()
+        notes.stopped = true
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
         web.destroy()
@@ -320,6 +325,11 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun fetchNotes(id: String, title: String, artist: String, albumUri: String) = notes.album(id, title, artist, albumUri)
         @JavascriptInterface fun fetchLyrics(id: String, track: String, artist: String, album: String, durSec: Int) = notes.lyrics(id, track, artist, album, durSec)
         @JavascriptInterface fun takeNotes(id: String): String = notes.take(id)
+
+        /** Jump to a song on an album (tapped in the song list). */
+        @JavascriptInterface fun playAlbumAt(uri: String, index: Int) = onMain {
+            box.playAt(uri, index) { ok, msg -> if (!ok) js("window.phonyPlayed && window.phonyPlayed(false, ${org.json.JSONObject.quote("Spotify didn't skip there ($msg).")})") }
+        }
 
         // ----- feel -----
         @JavascriptInterface

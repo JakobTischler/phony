@@ -3,6 +3,8 @@
 
     <!-- the tape box: your saved albums and their covers, from Spotify -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- J-cards download in the background only on Wi-Fi -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- songs saved on the phone -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />

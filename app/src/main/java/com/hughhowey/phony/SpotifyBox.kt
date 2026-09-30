@@ -367,13 +367,15 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         }.start()
     }
 
-    private fun playWeb(uri: String) {
+    private fun playWeb(uri: String, offset: Int = -1) {
         val devices = JSONObject(api("GET", "https://api.spotify.com/v1/me/player/devices", null)).optJSONArray("devices") ?: JSONArray()
         var id: String? = null
         for (i in 0 until devices.length()) { val d = devices.getJSONObject(i); if (d.optBoolean("is_active")) { id = d.optString("id"); break } }
         if (id == null) for (i in 0 until devices.length()) { val d = devices.getJSONObject(i); if (d.optString("type").equals("Smartphone", true)) { id = d.optString("id"); break } }
         val q = if (id.isNullOrEmpty()) "" else "?device_id=" + enc(id)
-        api("PUT", "https://api.spotify.com/v1/me/player/play$q", JSONObject().put("context_uri", uri).toString())
+        val body = JSONObject().put("context_uri", uri)
+        if (offset >= 0) body.put("offset", JSONObject().put("position", offset))
+        api("PUT", "https://api.spotify.com/v1/me/player/play$q", body.toString())
     }
 
     private fun viaAppRemote(uri: String, notes: MutableList<String>, done: (Boolean, String) -> Unit) {
@@ -457,7 +459,17 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     }
 
     /** A Web API read for the liner notes (null when signed out or it fails). */
-    fun webGet(u: String): JSONObject? = if (!signedIn) null else try { JSONObject(api("GET", u, null)) } catch (e: Exception) { null }
+    /** Null when signed out or Spotify says no; throws IOException when there's no signal. */
+    fun webGet(u: String): JSONObject? = if (!signedIn) null else try { JSONObject(api("GET", u, null)) } catch (e: java.io.IOException) { throw e } catch (e: Exception) { null }
+
+    /** Play an album from a given song (0 = the first). Needs the play permission; done() on the main thread. */
+    fun playAt(uri: String, index: Int, done: (Boolean, String) -> Unit) {
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        Thread {
+            val r = try { playWeb(uri, index); null } catch (e: Exception) { e.message ?: e.javaClass.simpleName }
+            main.post { done(r == null, r ?: "") }
+        }.start()
+    }
 
     fun release() { remote?.let { SpotifyAppRemote.disconnect(it) }; remote = null }
 

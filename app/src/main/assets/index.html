@@ -326,7 +326,9 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .pulltab{position:absolute;top:-1.6cqw;right:-2cqw;font-family:var(--f-print);font-weight:600;font-size:2.3cqw;letter-spacing:.14em;color:#8a7a5c;padding:.5cqw 1.4cqw;border-radius:.6cqw;background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 .2cqw rgba(60,50,30,.18)}
 .fold{--pw:min(calc(88vh * .64),44vw);--ph:calc(var(--pw) / .64);--acc:#c8372d;position:absolute;inset:0;z-index:50;background:rgba(14,10,7,0);transition:background .35s;overflow:hidden}
 .fold.show{background:rgba(14,10,7,.8)}
-.foldscroll{position:absolute;inset:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:calc((100vw - 2.2 * var(--pw)) / 2);scrollbar-width:none;overscroll-behavior:contain;display:flex;align-items:center}
+/* sideways is PHONY's own swipe (anywhere on the card); up and down scrolls a panel */
+.fold{touch-action:pan-y}
+.foldscroll{position:absolute;inset:0;overflow:hidden;display:flex;align-items:center}
 .foldscroll::-webkit-scrollbar{display:none}
 .foldstrip{display:flex;align-items:center;padding-inline:calc((100vw - 2.2 * var(--pw)) / 2);perspective:260vw}
 .fp{--i:0;position:relative;flex:none;width:var(--pw);height:var(--ph);max-height:92vh;container-type:size;overflow:hidden;scroll-snap-align:start;color:#2a241a;
@@ -384,8 +386,6 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .fphoto figcaption{position:absolute;left:3cqw;right:3cqw;bottom:1.6cqw;font-family:var(--f-hand);font-size:6cqw;line-height:1;color:var(--pen);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .foldclose{position:absolute;right:3vw;top:3vh;z-index:3;font-family:var(--f-device);font-size:12px;letter-spacing:.2em;border:0;border-radius:999px;padding:10px 16px;background:rgba(251,244,228,.92);color:#2a241a;cursor:pointer;opacity:0;transition:opacity .3s .4s}
 .fold.show .foldclose{opacity:1}
-.foldhint{position:absolute;left:0;right:0;bottom:2.6vh;text-align:center;font-family:var(--f-print);font-weight:600;font-size:13px;letter-spacing:.2em;color:rgba(251,244,228,.5);pointer-events:none;opacity:0;transition:opacity .3s .8s}
-.fold.show .foldhint{opacity:1}
 @media (prefers-reduced-motion:reduce){.fp{transition:opacity .2s}}
 </style></head><body>
 <template id="sidetpl">
@@ -489,7 +489,6 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
   <div class="fold" id="fold" hidden>
     <div class="foldscroll" id="foldscroll"><div class="foldstrip" id="foldstrip"></div></div>
     <button class="foldclose" id="foldclose">FOLD IT UP</button>
-    <div class="foldhint">SWIPE TO UNFOLD</div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -767,9 +766,9 @@ const moreLabels = {
     smallCaps(c, '♡ SIDE A', 918, 452, 22, '#8f6fc4', 'right', '800');
   },
 };
-// every shell a playlist can land on: the five from before, then the ten above
+// every shell a playlist can land on (the five first-generation tapes, with their printed
+// track lines, are retired: whatever plays now always has its name written on the tape)
 const DESIGNS = [
-  ...TAPES.slice(0, 5),
   {id:'geo', name:'Clear geo', shell:'rgba(205,230,240,.22)', clear:true, bias:'chrome', label:moreLabels.geo, write:{x:84, y:132, w:820, size:73}, jc:{stripes:['#e82292','#12a67c','#f4c21b'], type:'DYNAMAX dB·S 60 · TYPE II'}},
   {id:'racetrack', name:'For recording', shell:'#34373a', bias:'normal', label:moreLabels.racetrack, write:{x:256, y:134, w:490, size:46}, jc:{stripes:['#5bb84a','#efe6cf','#2c6f25'], type:'HOKUTO · FOR RECORDING · C60'}},
   {id:'kraft', name:'Kraft label', shell:'#2f8e99', bias:'normal', label:moreLabels.kraft, write:{x:300, y:144, w:600, size:66}, jc:{stripes:['#cf3b35','#e7cfaa','#cf3b35'], type:'RMC · TC 7052 · C60'}},
@@ -781,11 +780,6 @@ const DESIGNS = [
   {id:'neon', name:'Hyper-X', shell:'#f2dc12', bias:'chrome', label:moreLabels.neon, write:{x:106, y:130, w:790, size:68}, jc:{stripes:['#141414','#ff2fa0','#1fe0f0'], type:'HYPER·X 90 · EXTRA HIGH OUTPUT'}},
   {id:'pastel', name:'Candy 46', shell:'#f2c3cd', bias:'normal', label:moreLabels.pastel, write:{x:96, y:142, w:810, size:68}, jc:{stripes:['#cdb8ea','#f7e39a','#bfe6d3'], type:'CANDY 46 · TYPE I'}},
 ];
-DESIGNS[0].write = {x:146, y:160, w:760, size:71};
-DESIGNS[1].write = {x:104, y:444, w:790, size:57};
-DESIGNS[2].write = {x:104, y:446, w:790, size:54};
-DESIGNS[3].write = {x:104, y:446, w:790, size:54};
-DESIGNS[4].write = {x:104, y:446, w:790, size:54};
 
 // what each playlist was written in; dark: for writing on black
 const PENS = {
@@ -942,10 +936,15 @@ const store = {
 const S = {tape:store.get('tape', 0), userTape:store.get('tape', 0), tracks:DEMO.slice(), idx:0, t:0, playing:false, cue:0, fx:store.get('fx', true), vol:store.get('vol', .7),
   motor:0, dispP:0, a1:0, a2:0, cOff:0, ejected:false, ej:0, src:{kind:'demo', title:'For the boat'}, startAt:0, open:false, cmdAt:0, albumMode:false,
   r:{key:'', cur:null, hist:[], done:0, artKey:'', queue:[]}};
-if (S.tape >= ALBUM_TAPE){ S.tape = 0; S.userTape = 0; }
-S.playlist = null; S.ctxHold = 0;
+S.tape = PL_TAPE; S.ctxHold = 0; S.expect = null;
+// Whatever isn't an album plays on a written tape. A drawer playlist brings its own; anything
+// else (Liked Songs, a radio station, songs on the phone) gets one named after it, kept for next time.
+function pseudoPl(uri, name){ name = name || 'Off the radio'; return {id:'x:' + (uri || name.trim().toLowerCase()), uri:uri || '', name, pseudo:true}; }
+function plainPl(){ return pseudoPl('', S.src.kind === 'remote' ? 'Off the radio' : (S.src.title || 'For the boat')); }
+S.playlist = plainPl();
+function toPlain(){ S.playlist = plainPl(); swapTo(PL_TAPE, true, true); }
 // the tape a slot number stands for; the playlist slot takes the look of whichever playlist is in
-function tapeAt(i){ return i === PL_TAPE ? (S.playlist ? DESIGNS[plLook(S.playlist).d] : TAPES[S.userTape]) : TAPES[i]; }
+function tapeAt(i){ return i === PL_TAPE ? DESIGNS[plLook(S.playlist || plainPl()).d] : TAPES[i]; }
 const audio = new Audio(); audio.preload = 'auto'; audio.preservesPitch = false; audio.webkitPreservesPitch = false;
 const isRemote = () => S.src.kind === 'remote', isLocal = () => S.src.kind === 'local';
 const dur = i => (S.tracks[i] && S.tracks[i].dur) || 210;
@@ -955,7 +954,7 @@ function posSec(){
   let s = 0; for (let i = 0; i < S.idx; i++) s += dur(i); return s + S.t;
 }
 function infoFor(i){
-  const pl = S.tape === PL_TAPE && S.playlist, lk = pl && plLook(pl);
+  const pl = S.tape === PL_TAPE && (S.playlist || plainPl()), lk = pl && plLook(pl);
   return {title: pl ? pl.name : S.src.title, side:'A', idx:i, cur:S.tracks[i] || {title:'—', artist:''}, pen: lk ? PENS[lk.p] : null, tilt: lk ? lk.t : 0};
 }
 
@@ -990,7 +989,6 @@ function sfx(type){
     insert: () => { burst(t, .03, 1400, .8, .5); burst(t + .12, .025, 2800, 1.4, .45); thunk(t + .12, 105, .1, .45); },
     tick: () => burst(t, .02, 3000, 1.5, .3),
     fx: () => { burst(t, .02, 5000, 2, .3); thunk(t, 240, .04, .2); },
-    paper: () => { for (let k = 0; k < 6; k++) burst(t + k * .045 + Math.random() * .03, .05 + Math.random() * .04, 2200 + Math.random() * 3200, .8, .12 + Math.random() * .08); },
   };
   (P[type] || P.key)();
   try { if (N) N.haptic(type === 'latch' || type === 'eject' || type === 'insert' ? 2 : 1); else navigator.vibrate && navigator.vibrate(type === 'latch' || type === 'eject' ? 18 : 9); } catch (e) {}
@@ -1178,12 +1176,17 @@ function renderJList(){
     const li = document.createElement('li'); if (i === S.idx) li.className = 'cur';
     if (tr.past) li.classList.add('past');
     const b = document.createElement('button');
-    b.innerHTML = `<span class="n">${tr.past ? '✓' : (isRemote() ? (i - S.idx > 0 ? '→' : '') : i + 1 + '.')}</span><span class="t"></span><span class="d">${tr.dur ? fmt(tr.dur) : ''}</span>`;
+    const numbered = !isRemote() || S.albumMode;
+    b.innerHTML = `<span class="n">${numbered ? i + 1 + '.' : (tr.past ? '✓' : (i - S.idx > 0 ? '→' : ''))}</span><span class="t"></span><span class="d">${tr.dur ? fmt(tr.dur) : ''}</span>`;
     b.querySelector('.t').textContent = tr.title;
     if (tr.artist){ const sm = document.createElement('small'); sm.textContent = '  ' + tr.artist; b.querySelector('.t').append(sm); }
     b.addEventListener('click', () => {
       ensureAudio(); if (S.ejected) insert(S.tape);
-      if (isRemote()){ if (tr.queueId != null){ N.remoteCmd('queue', String(tr.queueId)); sfx('key'); } return; }
+      if (isRemote()){
+        if (tr.queueId != null){ N.remoteCmd('queue', String(tr.queueId)); sfx('key'); }
+        else if (S.albumMode && tr.albumPos != null && N.playAlbumAt){ const u = albumUriFor(S.r.cur && S.r.cur.album); if (u){ N.playAlbumAt(u, tr.albumPos); sfx('key'); } }
+        return;
+      }
       loadTrack(i, true);
     });
     li.append(b); ol.append(li);
@@ -1212,7 +1215,7 @@ function tapeChanged(){
     const st = $('#stripes'); st.innerHTML = '';
     tp.jc.stripes.forEach((col, i) => { const e = document.createElement('i'); e.style.background = col; e.style.height = ['3.6cqw', '1.6cqw', '.8cqw'][i]; e.style.marginTop = i ? '.5cqw' : '1.4cqw'; st.append(e); });
     $('#jtype').textContent = tp.jc.type + ' · SIDE A';
-    const pl = S.tape === PL_TAPE && S.playlist, pen = pl && PENS[plLook(pl).p], mt = $('#mixtitle');
+    const pl = S.tape === PL_TAPE && (S.playlist || plainPl()), pen = pl && PENS[plLook(pl).p], mt = $('#mixtitle');
     mt.textContent = pl ? pl.name : S.src.title;
     // the J-card spine is written with the same pen as the tape (unless it's a pen for black shells)
     mt.style.fontFamily = pen && !pen.dark ? pen.font : ''; mt.style.color = pen && !pen.dark ? pen.color : ''; mt.style.fontSize = pen && !pen.dark ? (8.4 * pen.k * .8).toFixed(2) + 'cqw' : '';
@@ -1243,17 +1246,24 @@ function setAlbum(title, artist, dataUrl, key){
   if (dataUrl){ const img = new Image(); img.onload = () => { ALBUM.img = img; done(); }; img.onerror = () => { ALBUM.img = null; done(); }; img.src = dataUrl; }
   else { ALBUM.img = null; done(); }
 }
+// switching between an album and a playlist starts the song list fresh
 function setAlbumMode(on){
-  if (on === S.albumMode) return; S.albumMode = on;
-  if (on) S.playlist = null;
-  swapTo(on ? ALBUM_TAPE : (S.playlist ? PL_TAPE : S.userTape), true);
+  if (on === S.albumMode) return; S.albumMode = on; S.r.hist = [];
+  if (on){ S.playlist = null; swapTo(ALBUM_TAPE, true); }
+  else { if (!S.playlist) S.playlist = plainPl(); swapTo(PL_TAPE, true, true); }
+  if (isRemote() && S.r.cur) buildRemoteTracks(S.r.queue);
 }
-// a playlist's tape goes in (or comes out, with null)
+// a playlist's tape goes in (null: the plain written tape for what's playing)
 function setPlaylist(pl){
-  if (pl ? (S.playlist && S.playlist.uri === pl.uri) : !S.playlist) return;
-  S.playlist = pl;
-  if (pl){ S.albumMode = false; S.boxAlbum = null; swapTo(PL_TAPE, true, true); }
-  else if (S.tape === PL_TAPE) swapTo(S.albumMode ? ALBUM_TAPE : S.userTape, true);
+  pl = pl || plainPl();
+  if (!S.albumMode && S.playlist && S.playlist.id === pl.id){
+    // same tape; Spotify sometimes names the playlist a moment late
+    if (pl.name && pl.name !== S.playlist.name){ S.playlist.name = pl.name; refreshShells(); tapeChanged(); }
+    return;
+  }
+  S.playlist = pl; S.albumMode = false; S.boxAlbum = null; S.r.hist = [];
+  swapTo(PL_TAPE, true, true);
+  if (isRemote() && S.r.cur) buildRemoteTracks(S.r.queue);
   if (boxVisible()) renderBoxes();
 }
 
@@ -1277,13 +1287,20 @@ function pollNative(now){
     remoteMissing = 0;
     let st; try { st = JSON.parse(raw); } catch (e) { return; }
     const R = S.r, key = st.title + '|' + st.artist;
+    // just after a tape from the box or drawer goes in, Spotify still shows the song it was
+    // playing before; that song isn't part of the new tape, so wait for Spotify to switch
+    if (S.expect != null){ if (key === S.expect && now < S.ctxHold) return; S.expect = null; }
+    const qsig = (st.queue || []).map(q => q.title).join('\n');
     if (key !== R.key){
       if (R.cur){ const played = R.cur.dur || S.t; R.hist.push({...R.cur, past:true}); R.done += played; if (R.hist.length > 40) R.hist.shift(); }
-      R.key = key; R.cur = {title:st.title, artist:st.artist, album:st.album, dur:st.dur / 1000};
+      R.key = key; R.cur = {title:st.title, artist:st.artist, album:st.album, albumArtist:st.albumArtist || '', dur:st.dur / 1000};
       S.src.app = st.app;
       const prevAlbum = R.hist.length ? R.hist[R.hist.length - 1].album : '';
       judgeTape(st, prevAlbum, true);
-      buildRemoteTracks(st.queue || []);
+      R.qsig = qsig; buildRemoteTracks(st.queue || []);
+    } else if (qsig !== R.qsig){
+      // Spotify updates its up-next list a little after it switches; follow it
+      R.qsig = qsig; buildRemoteTracks(st.queue || []);
     }
     // cover art often arrives a moment after the track changes
     if (st.artKey !== R.artKey){ R.artKey = st.artKey; setAlbum(st.album, st.albumArtist || st.artist, st.hasArt ? N.getRemoteArt() : '', st.artKey); }
@@ -1307,38 +1324,78 @@ function spotifySaysAlbum(album){ const cx = spotifyCtx(); return !!cx && cx.typ
  */
 function judgeTape(st, prevAlbum, onTrack){
   // just after PHONY started something, Spotify's answer may still describe the last thing
-  const cx = performance.now() < S.ctxHold ? null : spotifyCtx();
-  if (cx && cx.type === 'playlist'){
-    const pl = PLAYLISTS.find(p => p.uri === cx.uri);
-    if (pl){ setPlaylist(pl); return; }
-    if (S.playlist) setPlaylist(null); // another playlist, one not in the drawer
-    setAlbumMode(false); return;
-  }
-  if (cx && cx.type === 'album' && sameName(cx.album, st.album)){ setPlaylist(null); setAlbumMode(true); return; }
-  if (S.playlist){
-    const albumQueue = !!st.album && sameName(st.queueTitle, st.album);
-    if ((!cx && !albumQueue) || sameName(st.queueTitle, S.playlist.name) || performance.now() < S.ctxHold) return;
-    setPlaylist(null);
-  }
-  if (onTrack) setAlbumMode(!!st.album && (sameName(st.queueTitle, st.album) || sameName(prevAlbum, st.album) || (!!S.boxAlbum && sameName(S.boxAlbum.title, st.album)) || (!!cx && cx.type === 'album' && sameName(cx.album, st.album))));
+  const hold = performance.now() < S.ctxHold;
+  const cx = hold ? null : spotifyCtx();
+  if (cx && cx.type === 'album' && sameName(cx.album, st.album)){ setAlbumMode(true); return; }
+  if (cx && cx.type && cx.type !== 'album'){ setPlaylist(ctxPlaylist(cx, st)); return; }
+  if (hold) return;
+  const albumish = !!st.album && (sameName(st.queueTitle, st.album) || (onTrack && sameName(prevAlbum, st.album)) || (!!S.boxAlbum && sameName(S.boxAlbum.title, st.album)));
+  if (albumish){ setAlbumMode(true); return; }
+  if (!onTrack || cx) return;
+  // no word from Spotify: go by the name it gives the queue
+  if (st.queueTitle){ setPlaylist(PLAYLISTS.find(p => sameName(p.name, st.queueTitle)) || pseudoPl('', st.queueTitle)); return; }
+  if (S.albumMode) setAlbumMode(false);
 }
+// the tape for a playlist, Liked Songs, an artist or a radio station
+function ctxPlaylist(cx, st){
+  if (cx.type === 'playlist'){ const pl = PLAYLISTS.find(p => p.uri === cx.uri); if (pl) return pl; }
+  if (cx.type === 'collection') return pseudoPl(cx.uri || 'collection', 'Liked Songs');
+  const name = st.queueTitle && !sameName(st.queueTitle, st.album) ? st.queueTitle : (cx.type === 'artist' ? st.artist : '');
+  return pseudoPl(cx.uri, name || (cx.type === 'playlist' ? 'Playlist' : 'Off the radio'));
+}
+const songKey = t => plainSong(t.title) + '|' + (t.artist || '').trim().toLowerCase();
 function buildRemoteTracks(queue){
-  const R = S.r, hist = R.hist.slice(-8);
+  const R = S.r; R.queue = queue || [];
+  if (!R.cur) return;
   // Spotify's queue starts with the song that's playing (sometimes after the ones already played); list only what comes next
-  const at = queue.findIndex(q => sameName(q.title, R.cur.title));
-  const upNext = at >= 0 ? queue.slice(at + 1) : queue;
-  S.tracks = [...hist, R.cur, ...upNext.slice(0, 20).map(q => ({title:q.title, artist:q.artist || '', queueId:q.id}))];
+  const at = R.queue.findIndex(q => sameName(q.title, R.cur.title));
+  const upNext = at >= 0 ? R.queue.slice(at + 1) : R.queue;
+  if (S.albumMode){
+    // an album: its own songs, in order, each once, the one playing marked
+    const list = albumTracks(R.cur.album, R.cur.albumArtist || R.cur.artist);
+    if (list === null || (list.length && list.findIndex(t => plainSong(t.t) === plainSong(R.cur.title)) < 0)){
+      S.tracks = [R.cur]; S.idx = 0; renderJList(); trackChanged(); return;
+    }
+    if (list.length){
+      const ci = list.findIndex(t => plainSong(t.t) === plainSong(R.cur.title));
+      S.tracks = list.map((t, i) => i === ci ? R.cur : {title:t.t, artist:R.cur.artist, dur:t.d, past:i < ci, albumPos:i,
+        queueId:(R.queue.find(q => plainSong(q.title) === plainSong(t.t)) || {}).id});
+      R.cur.albumPos = ci;
+      S.idx = ci; renderJList(); trackChanged(); return;
+    }
+  }
+  // a playlist: the last few played, the one playing, what's next; each song once
+  const seen = new Set([songKey(R.cur)]), hist = [], next = [];
+  if (!S.albumMode) for (let i = R.hist.length - 1; i >= 0 && hist.length < 8; i--){ const h = R.hist[i], k = songKey(h); if (!seen.has(k)){ seen.add(k); hist.unshift(h); } }
+  for (const q of upNext){ if (next.length >= 20) break; const t = {title:q.title, artist:q.artist || '', queueId:q.id}, k = songKey(t); if (!seen.has(k)){ seen.add(k); next.push(t); } }
+  S.tracks = [...hist, R.cur, ...next];
   S.idx = hist.length; renderJList(); trackChanged();
 }
+// an album's song list: from the tape box, or from its J-card (fetched, then saved); null while fetching
+const albumAsked = {};
+function albumTracks(album, artist){
+  if (!album) return [];
+  const cs = (S.boxAlbum && CASES.find(c => c.id === S.boxAlbum.id && sameTitle(c.title, album))) || CASES.find(c => sameTitle(c.title, album));
+  if (cs && cs.tracks && cs.tracks.length) return cs.tracks;
+  const key = albumKey({title:album, artist}), n = notesCache[key];
+  if (n) return n.tracks || [];
+  if (!N) return [];
+  if (!albumAsked[key]){ albumAsked[key] = 1; const id = 'n' + (++foldReq); pending[id] = key; N.fetchNotes(id, album, artist || '', ctxAlbumUri(album)); }
+  return null;
+}
+function albumUriFor(album){
+  const cs = (S.boxAlbum && CASES.find(c => c.id === S.boxAlbum.id)) || CASES.find(c => sameTitle(c.title, album));
+  return (cs && cs.uri) || ctxAlbumUri(album);
+}
 
-function chooseSource(src, restoring){
+function chooseSource(src, restoring, keepTape){
   if (!restoring){ pause(); syncKeys(); } S.cue = 0;
   S.r = {key:'', cur:null, hist:[], done:0, artKey:'', queue:[]};
   S.albumMode = false; S.playlist = null;
   if (src.kind === 'remote'){
     S.src = {kind:'remote', title:'Off the radio', app:''}; S.tracks = [{title:'Waiting for another app…', artist:''}]; S.idx = 0; S.t = 0;
     N.useRemote(true);
-    if (S.tape >= ALBUM_TAPE) swapTo(S.userTape, true);
+    if (!keepTape) toPlain();
   } else if (src.kind === 'local'){
     N.useRemote(false);
     let tracks = []; try { tracks = JSON.parse(N.loadSource(src.type, String(src.id))); } catch (e) {}
@@ -1347,12 +1404,12 @@ function chooseSource(src, restoring){
     S.tracks = tracks.map(t => ({title:t.title, artist:t.artist, dur:t.dur / 1000, album:t.album})); S.idx = 0; S.t = 0; S.dispP = 0;
     if (src.type === 'album'){
       setAlbum(src.title, src.artist, N.getAlbumArt(String(src.id)), 'local|' + src.id);
-      S.albumMode = true; swapTo(ALBUM_TAPE, true);
-    } else if (S.tape >= ALBUM_TAPE) swapTo(S.userTape, true);
+      S.albumMode = true; S.playlist = null; swapTo(ALBUM_TAPE, true);
+    } else toPlain();
   } else if (src.kind === 'demo'){
     if (N) N.useRemote(false);
     S.src = {kind:'demo', title:'For the boat'}; S.tracks = DEMO.slice(); S.idx = 0; S.t = 0;
-    if (S.tape >= ALBUM_TAPE) swapTo(S.userTape, true);
+    toPlain();
   }
   store.set('src', src);
   renderJList(); tapeChanged();
@@ -1404,8 +1461,8 @@ $('#files').addEventListener('change', () => {
   S.tracks = list.map(f => { const base = f.name.replace(/\.[^.]+$/, ''); const parts = base.split(' - ');
     return {title: parts.length > 1 ? parts.slice(1).join(' - ') : base, artist: parts.length > 1 ? parts[0] : '', dur:0, url:URL.createObjectURL(f)}; });
   S.tracks.forEach(tr => { const a = new Audio(); a.preload = 'metadata'; a.src = tr.url; a.onloadedmetadata = () => { tr.dur = a.duration; renderJList(); markJList(); }; });
-  S.src = {kind:'files', title:'My mix'}; S.dispP = 0; S.playlist = null; S.albumMode = false;
-  if (S.tape >= ALBUM_TAPE) S.tape = S.userTape;
+  S.src = {kind:'files', title:'My mix'}; S.dispP = 0; S.albumMode = false;
+  S.playlist = plainPl(); S.tape = PL_TAPE;
   if (S.ejected) insert(S.tape);
   renderJList(); loadTrack(0); tapeChanged();
 });
@@ -1501,7 +1558,12 @@ const MORE = [
 ];
 const TRACKS = ['Opening Night', 'Salt in the Wires', 'Southbound', 'All the Lights at Once', 'Half a Heart', 'Undertow', 'Late Ferry', 'Nobody Waves Back', 'The Long Way Home', 'Paper Crowns', 'Radio Silence', 'Last Song on the Tape'];
 let inPlayer = null;
-let CASES = N ? [] : DEMO_CASES;
+const yearOf = c => { const y = parseInt(c.year, 10); return isNaN(y) ? 99999 : y; };
+const byArtist = a => (a || '').trim().replace(/^the\s+/i, '');
+function sortCases(list){
+  return list.sort((a, b) => yearOf(a) - yearOf(b) || byArtist(a.artist).localeCompare(byArtist(b.artist), undefined, {sensitivity:'base'}) || (a.title || '').localeCompare(b.title || '', undefined, {sensitivity:'base'}));
+}
+let CASES = N ? [] : sortCases(DEMO_CASES.slice());
 /* ---------- the drawer: the twelve playlists played most recently ---------- */
 const DRAWER = 12;
 // In the app these come from Spotify. In this mockup they're invented.
@@ -1509,22 +1571,29 @@ const DEMO_PLAYLISTS = ['anchor watch', 'Deck Scrub Sunday', 'night passage', 'B
   .map((name, i) => ({id:'p' + i, uri:'spotify:playlist:p' + i, name, count:[34, 18, 52, 71, 26, 40, 22, 95, 30, 17, 44, 61, 12][i]}));
 let PLAYLISTS = N ? [] : DEMO_PLAYLISTS.slice(0, DRAWER);
 let LOOKS = store.get('plLooks', {});
+// looks saved by an earlier build named shells by position, with the five old tapes first
+const OLD_IDS = ['mix','chrome','clear','memphis','metal','geo','racetrack','kraft','redband','clearred','sunset','side90','blacksf','neon','pastel'];
+Object.keys(LOOKS).forEach(k => {
+  const l = LOOKS[k]; if (!l.did) l.did = OLD_IDS[l.d];
+  const d = DESIGNS.findIndex(x => x.id === l.did);
+  if (d < 0 || !PENS[l.p] || !!PENS[l.p].dark !== !!DESIGNS[d].write.dark) delete LOOKS[k]; else l.d = d;
+});
+store.set('plLooks', LOOKS);
 // each playlist gets a shell, a pen and a toss angle the first time it's seen, and keeps them
-function assignLooks(){
-  let changed = false;
-  const used = new Set(PLAYLISTS.map(p => LOOKS[p.id] && LOOKS[p.id].d).filter(v => v != null));
-  PLAYLISTS.forEach(p => {
-    if (LOOKS[p.id] && DESIGNS[LOOKS[p.id].d] && PENS[LOOKS[p.id].p]) return;
-    let pool = DESIGNS.map((_, i) => i).filter(i => !used.has(i)); if (!pool.length) pool = DESIGNS.map((_, i) => i);
-    const d = pool[Math.floor(Math.random() * pool.length)]; used.add(d);
-    const pens = Object.keys(PENS).filter(k => !!PENS[k].dark === !!DESIGNS[d].write.dark);
-    const rnd = (a) => +((Math.random() - .5) * a).toFixed(2);
-    LOOKS[p.id] = {d, p:pens[Math.floor(Math.random() * pens.length)], t:rnd(.06), r:rnd(10), x:rnd(3), y:rnd(3)};
-    changed = true;
-  });
-  if (changed) store.set('plLooks', LOOKS);
+function assignLook(id, used){
+  let pool = DESIGNS.map((_, i) => i).filter(i => !used.has(i)); if (!pool.length) pool = DESIGNS.map((_, i) => i);
+  const d = pool[Math.floor(Math.random() * pool.length)]; used.add(d);
+  const pens = Object.keys(PENS).filter(k => !!PENS[k].dark === !!DESIGNS[d].write.dark);
+  const rnd = (a) => +((Math.random() - .5) * a).toFixed(2);
+  LOOKS[id] = {d, did:DESIGNS[d].id, p:pens[Math.floor(Math.random() * pens.length)], t:rnd(.06), r:rnd(10), x:rnd(3), y:rnd(3)};
+  store.set('plLooks', LOOKS);
 }
-function plLook(pl){ if (!LOOKS[pl.id]){ if (!PLAYLISTS.includes(pl)) PLAYLISTS.push(pl); assignLooks(); } return LOOKS[pl.id]; }
+function assignLooks(){
+  // the drawer's twelve on as many different shells as there are
+  const used = new Set(PLAYLISTS.map(p => LOOKS[p.id] && LOOKS[p.id].d).filter(v => v != null));
+  PLAYLISTS.forEach(p => { if (!LOOKS[p.id]) assignLook(p.id, used); });
+}
+function plLook(pl){ if (!LOOKS[pl.id]) assignLook(pl.id, new Set()); return LOOKS[pl.id]; }
 assignLooks();
 const thumbCache = {};
 function plThumb(pl){
@@ -1556,13 +1625,13 @@ function drawerEl(){
   return dr;
 }
 function loadPlaylist(pl){
-  S.boxAlbum = null; S.ctxHold = performance.now() + 9000;
+  S.boxAlbum = null; S.ctxHold = performance.now() + 9000; S.expect = S.r.key || null;
   if (N){
     N.playPlaylist(pl.uri, pl.name);
-    if (S.tape >= ALBUM_TAPE) S.tape = S.userTape; // no second eject: this tape replaces it
-    if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true);
+    if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true, true);
     else toast('Turn on notification access for PHONY so it can follow Spotify.');
     S.playlist = pl; S.albumMode = false; S.ejected = true; insert(PL_TAPE); renderBoxes();
+    S.tracks = [{title:pl.name, artist:'Starting…'}]; S.idx = 0; renderJList(); trackChanged();
     S.playing = true; S.startAt = S.cmdAt = performance.now(); setTimeout(() => sfx('latch'), 250); syncKeys();
     return;
   }
@@ -1614,7 +1683,7 @@ function readBox(){
   else if (boxStatus.noticeId && boxStatus.noticeId !== lastNotice){ lastNotice = boxStatus.noticeId; if (boxStatus.notice) toast(boxStatus.notice); }
   let list = []; try { list = JSON.parse(N.getBox()); } catch (e) {}
   const old = {}; CASES.forEach(c => { old[c.id] = c; });
-  CASES = list.map(a => { const o = old[a.id]; return Object.assign(o || {pal:NEUTRAL}, {id:a.id, uri:a.uri, title:a.title, artist:a.artist, year:a.year, tracks:a.tracks || []}); });
+  CASES = sortCases(list.map(a => { const o = old[a.id]; return Object.assign(o || {pal:NEUTRAL}, {id:a.id, uri:a.uri, title:a.title, artist:a.artist, year:a.year, tracks:a.tracks || []}); }));
   loadCovers();
   let pls = []; try { pls = JSON.parse(N.getDrawer ? N.getDrawer() : '[]'); } catch (e) {}
   PLAYLISTS = pls.slice(0, DRAWER); assignLooks();
@@ -1759,15 +1828,16 @@ function showCase(al, bay){
   });
 }
 function loadFromBox(al){
-  S.boxAlbum = {id:al.id, title:al.title}; S.playlist = null; S.ctxHold = performance.now() + 9000;
+  S.boxAlbum = {id:al.id, title:al.title}; S.playlist = null; S.ctxHold = performance.now() + 9000; S.expect = S.r.key || null;
   if (N){
     N.playAlbum(al.uri, al.title);
-    if (S.tape >= ALBUM_TAPE) S.tape = S.userTape; // no second eject: this tape replaces it
-    if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true);
+    if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true, true);
     else toast('Turn on notification access for PHONY so it can follow Spotify.');
     S.boxAlbum = {id:al.id, title:al.title};
     ALBUM.title = al.title; ALBUM.artist = al.artist; ALBUM.img = al.img || art(al, 880, 880); ALBUM.key = 'box|' + al.id;
-    S.albumMode = true; S.ejected = true; insert(ALBUM_TAPE); renderBoxes();
+    S.albumMode = true; S.playlist = null; S.ejected = true; insert(ALBUM_TAPE); renderBoxes();
+    // the album's songs straight away, while Spotify switches
+    if (al.tracks && al.tracks.length){ S.tracks = al.tracks.map(t => ({title:t.t, artist:al.artist, dur:t.d})); S.idx = 0; renderJList(); trackChanged(); }
     S.playing = true; S.startAt = S.cmdAt = performance.now(); setTimeout(() => sfx('latch'), 250); syncKeys();
     return;
   }
@@ -1789,7 +1859,7 @@ function hideBox(){ $('.lid').classList.remove('boxopen'); $('#cover').classList
 let moreI = 0;
 window.phonyBoxNew = () => {
   const al = MORE[moreI++ % MORE.length]; if (CASES.find(c => c.id === al.id)) return;
-  CASES.unshift(al); renderBoxes(al.id);
+  CASES.unshift(al); sortCases(CASES); renderBoxes(al.id);
   if (!S.ejected){ S.ejected = true; pause(); sfx('eject'); syncKeys(); showBox(); renderBoxes(al.id); }
 };
 window.phonyEject = () => { ensureAudio(); if (!S.ejected) eject(); };
@@ -1817,7 +1887,7 @@ function nowAlbum(){
 const albumKey = al => ((al.title || '?') + '|' + (al.artist || '')).toLowerCase();
 function openFold(){
   if (!S.open || foldOpen) return;
-  ensureAudio(); sfx('paper');
+  ensureAudio();
   foldOpen = true; fold.hidden = false;
   const al = nowAlbum(); foldKey = albumKey(al); foldNotes = notesCache[foldKey] || null;
   foldLyrKey = ''; foldLyrics = null;
@@ -1827,7 +1897,7 @@ function openFold(){
   askLyrics();
 }
 function closeFold(){
-  if (!foldOpen) return; foldOpen = false; sfx('paper');
+  if (!foldOpen) return; foldOpen = false;
   fold.classList.remove('show'); setTimeout(() => { if (!foldOpen){ fold.hidden = true; foldStrip.innerHTML = ''; } }, 750);
 }
 function askNotes(al){
@@ -1847,7 +1917,10 @@ function askLyrics(){
 window.phonyNotes = id => {
   let j = null; try { j = JSON.parse(N.takeNotes(id) || 'null'); } catch (e) {}
   const key = pending[id]; delete pending[id]; if (!j) return;
-  if (id[0] === 'n'){ notesCache[key] = j; if (foldOpen && key === foldKey){ foldNotes = j; buildFold(foldAl); } }
+  if (id[0] === 'n'){
+    notesCache[key] = j; if (foldOpen && key === foldKey){ foldNotes = j; buildFold(foldAl); }
+    const c = S.r.cur; if (S.albumMode && isRemote() && c && albumKey({title:c.album, artist:c.albumArtist || c.artist}) === key) buildRemoteTracks(S.r.queue);
+  }
   else if (foldOpen && key === foldLyrKey){ foldLyrics = j; renderWords(); }
 };
 function foldTrackChanged(){
@@ -1978,6 +2051,37 @@ function syncWords(){
   const p = foldSync[i].p; p.classList.add('on');
   if (performance.now() - foldTouchAt > 4000){ const body = p.closest('.fbody'); body.scrollTo({top:Math.max(0, p.offsetTop - body.clientHeight * .36), behavior:'smooth'}); }
 }
+// swipe sideways anywhere on the card; it settles on the nearest panel (a flick goes one further)
+let sw = null, wheelT = 0;
+function foldStops(){
+  const pad = parseFloat(getComputedStyle(foldStrip).paddingLeft) || 0, max = foldScroll.scrollWidth - foldScroll.clientWidth;
+  return [...new Set($$('#foldstrip .fp').map(p => Math.max(0, Math.min(max, p.offsetLeft - pad))).concat([max]))].sort((a, b) => a - b);
+}
+function settleFold(v){
+  const stops = foldStops(), x = foldScroll.scrollLeft;
+  let target = stops.reduce((b, s) => Math.abs(s - x) < Math.abs(b - x) ? s : b, stops[0]);
+  if (Math.abs(v) > .35){ const ahead = v < 0 ? stops.find(s => s > x + 4) : [...stops].reverse().find(s => s < x - 4); if (ahead != null) target = ahead; }
+  foldScroll.scrollTo({left:target, behavior:'smooth'});
+}
+fold.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) { sw = null; return; }
+  const t = e.touches[0]; sw = {x:t.clientX, y:t.clientY, left:foldScroll.scrollLeft, lock:0, lx:t.clientX, lt:performance.now(), v:0};
+}, {passive:true});
+fold.addEventListener('touchmove', e => {
+  if (!sw) return; const t = e.touches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+  if (!sw.lock){ if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) sw.lock = 1; else if (Math.abs(dy) > 8) sw.lock = 2; }
+  if (sw.lock !== 1) return;
+  e.preventDefault();
+  foldScroll.scrollTo({left:sw.left - dx, behavior:'instant'});
+  const now = performance.now(); sw.v = (t.clientX - sw.lx) / Math.max(1, now - sw.lt); sw.lx = t.clientX; sw.lt = now;
+}, {passive:false});
+const swEnd = () => { if (sw && sw.lock === 1) settleFold(sw.v); sw = null; };
+fold.addEventListener('touchend', swEnd); fold.addEventListener('touchcancel', swEnd);
+// trackpads and mice, for the desktop version
+fold.addEventListener('wheel', e => {
+  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0); if (!d) return;
+  e.preventDefault(); foldScroll.scrollLeft += d; clearTimeout(wheelT); wheelT = setTimeout(() => settleFold(0), 140);
+}, {passive:false});
 // in a desktop browser there's no Spotify or network: stand-ins that say what goes where
 function demoNotes(al){
   return {title:al.title || S.src.title, artist:al.artist || 'Various artists', date:'1988-06-14',
