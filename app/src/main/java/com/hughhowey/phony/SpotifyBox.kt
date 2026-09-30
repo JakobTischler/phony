@@ -17,7 +17,8 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 
 /**
- * The tape box: the albums saved in your Spotify library, each with its cover.
+ * The tape box: the albums saved in your Spotify library, each with its cover,
+ * and the drawer of playlist tapes: the twelve playlists played most recently.
  *
  * - Reading the library uses Spotify's Web API. You sign in once in the browser;
  *   after that PHONY keeps a refresh key and never asks again.
@@ -29,13 +30,17 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     companion object {
         const val CLIENT_ID = "e46b23f44fee4ddfb565d5a78ded8345"
         const val REDIRECT = "phony://callback"
-        private const val SCOPES = "user-library-read user-modify-playback-state user-read-playback-state user-read-currently-playing"
+        private const val SCOPES = "user-library-read user-modify-playback-state user-read-playback-state user-read-currently-playing " +
+            "playlist-read-private playlist-read-collaborative user-read-recently-played"
         private const val PLAY_SCOPE = "user-modify-playback-state"
+        private const val LIST_SCOPES = "playlist-read-private user-read-recently-played"
+        const val DRAWER = 12
     }
 
     private val prefs = ctx.getSharedPreferences("spotify", Context.MODE_PRIVATE)
     private val boxFile = File(ctx.filesDir, "box.json")
     private val coverDir = File(ctx.filesDir, "covers").apply { mkdirs() }
+    private val drawerFile = File(ctx.filesDir, "playlists.json")
 
     @Volatile var state = "idle"; private set      // idle · loading · ready · error
     @Volatile var message = ""; private set
@@ -47,6 +52,8 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     val signedIn get() = prefs.getString("refresh", null) != null
     /** Signed in with permission to change what Spotify plays (added after the first version). */
     val canPlay get() = signedIn && (prefs.getString("scope", "") ?: "").contains(PLAY_SCOPE)
+    /** Signed in with permission to read playlists and what played lately (added with the playlist drawer). */
+    val canPlaylists get() = signedIn && LIST_SCOPES.split(" ").all { (prefs.getString("scope", "") ?: "").contains(it) }
 
     fun statusJson(): String = JSONObject()
         .put("signedIn", signedIn)
@@ -55,11 +62,13 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         .put("updated", if (boxFile.exists()) boxFile.lastModified() else 0L)
         .put("spotify", SpotifyAppRemote.isSpotifyInstalled(ctx))
         .put("canPlay", canPlay)
+        .put("canPlaylists", canPlaylists)
         .put("notice", notice)
         .put("noticeId", noticeId)
         .toString()
 
     fun boxJson(): String = if (boxFile.exists()) boxFile.readText() else "[]"
+    fun drawerJson(): String = if (drawerFile.exists()) drawerFile.readText() else "[]"
 
     // ---------- signing in (PKCE, in the browser) ----------
 
@@ -114,7 +123,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
 
     fun signOut() {
         prefs.edit().clear().apply(); access = null; accessUntil = 0
-        boxFile.delete(); state = "idle"; onChange()
+        boxFile.delete(); drawerFile.delete(); state = "idle"; onChange()
     }
 
     private fun saveTokens(j: JSONObject) {
@@ -200,6 +209,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             boxFile.writeText(out.toString())
             state = "ready"; message = ""
             onChange()
+            try { syncDrawer() } catch (e: Exception) { }
             // covers, after the box is up
             for (i in 0 until out.length()) {
                 val a = out.getJSONObject(i)
@@ -247,6 +257,83 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         } finally { c.disconnect() }
     }
 
+    // ---------- the drawer: playlists, most recently played first ----------
+
+    /**
+     * Twelve playlists. First the ones played lately (Spotify's recently-played list,
+     * plus every playlist PHONY has seen Spotify playing), newest first; then, if there
+     * aren't twelve yet, the rest of your playlists in the order Spotify lists them.
+     */
+    private fun syncDrawer() {
+        if (!canPlaylists) return
+        val lib = mutableListOf<JSONObject>()
+        var next: String? = "https://api.spotify.com/v1/me/playlists?limit=50"
+        var pages = 0
+        while (next != null && pages < 6) {
+            val j = JSONObject(get(next)); pages++
+            val items = j.optJSONArray("items") ?: JSONArray()
+            for (i in 0 until items.length()) { val pl = items.optJSONObject(i) ?: continue; playlistEntry(pl)?.let { e -> lib.add(e) } }
+            next = j.optString("next").takeIf { it.isNotEmpty() && it != "null" }
+        }
+        // when each playlist last played: Spotify's list (last 50 songs) and PHONY's own notes
+        val played = HashMap<String, Long>()
+        try {
+            val r = JSONObject(get("https://api.spotify.com/v1/me/player/recently-played?limit=50")).optJSONArray("items") ?: JSONArray()
+            for (i in 0 until r.length()) {
+                val row = r.getJSONObject(i)
+                val cx = row.optJSONObject("context") ?: continue
+                if (cx.optString("type") != "playlist") continue
+                val at = try { java.time.Instant.parse(row.optString("played_at")).toEpochMilli() } catch (e: Exception) { 0L }
+                val u = cx.optString("uri"); if (u.isNotEmpty() && at > (played[u] ?: 0L)) played[u] = at
+            }
+        } catch (e: Exception) { }
+        val mine = localPlays()
+        mine.keys().forEach { u -> val at = mine.optLong(u); if (at > (played[u] ?: 0L)) played[u] = at }
+        // a playlist you played but don't follow: look it up (Spotify may refuse other people's)
+        val known = lib.associateBy { it.getString("uri") }.toMutableMap()
+        played.keys.filter { it !in known }.sortedByDescending { played[it] }.take(DRAWER).forEach { u ->
+            val id = u.substringAfterLast(':')
+            try { playlistEntry(JSONObject(get("https://api.spotify.com/v1/playlists/$id?fields=id,uri,name,owner(display_name),items(total),tracks(total)")))?.let { e -> known[u] = e } } catch (e: Exception) { }
+        }
+        val recent = played.keys.filter { it in known }.sortedByDescending { played[it] }
+        val order = (recent + lib.map { it.getString("uri") }).distinct().take(DRAWER)
+        val out = JSONArray()
+        order.forEach { u -> out.put(known[u]!!.put("played", played[u] ?: 0L)) }
+        drawerFile.writeText(out.toString())
+        onChange()
+    }
+
+    private fun playlistEntry(pl: JSONObject): JSONObject? {
+        val id = pl.optString("id"); if (id.isEmpty()) return null
+        // Spotify renamed a playlist's "tracks" to "items" in 2026; read either
+        val count = (pl.optJSONObject("items") ?: pl.optJSONObject("tracks"))?.optInt("total") ?: 0
+        return JSONObject().put("id", id).put("uri", pl.optString("uri", "spotify:playlist:$id"))
+            .put("name", pl.optString("name")).put("owner", pl.optJSONObject("owner")?.optString("display_name") ?: "").put("count", count)
+    }
+
+    private fun localPlays(): JSONObject = try { JSONObject(prefs.getString("plays", "{}") ?: "{}") } catch (e: Exception) { JSONObject() }
+
+    /** A playlist just played: note the time and move it to the front of the drawer. */
+    fun markPlayed(uri: String) {
+        if (!uri.startsWith("spotify:playlist:")) return
+        val now = System.currentTimeMillis()
+        val plays = localPlays().put(uri, now)
+        // keep the notes small: the 60 most recent
+        if (plays.length() > 60) {
+            val keep = plays.keys().asSequence().toList().sortedByDescending { plays.optLong(it) }.take(60).toSet()
+            plays.keys().asSequence().toList().filter { it !in keep }.forEach { plays.remove(it) }
+        }
+        prefs.edit().putString("plays", plays.toString()).apply()
+        val list = try { JSONArray(drawerJson()) } catch (e: Exception) { JSONArray() }
+        val items = (0 until list.length()).map { list.getJSONObject(it) }
+        val hit = items.firstOrNull { it.optString("uri") == uri }
+        if (hit == null) { if (canPlaylists && !syncing) Thread { try { syncDrawer() } catch (e: Exception) { } }.start(); return }
+        if (items.first() === hit) return
+        val out = JSONArray(); out.put(hit.put("played", now)); items.filter { it !== hit }.forEach { out.put(it) }
+        drawerFile.writeText(out.toString())
+        onChange()
+    }
+
     // ---------- playing an album ----------
 
     /**
@@ -257,6 +344,8 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
      * done() runs on the main thread; on failure the message says what each way answered.
      */
     fun play(uri: String, title: String, done: (Boolean, String) -> Unit) {
+        val isList = uri.startsWith("spotify:playlist:")
+        if (isList) markPlayed(uri)
         val main = android.os.Handler(android.os.Looper.getMainLooper())
         Thread {
             val notes = mutableListOf<String>()
@@ -270,7 +359,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
                 if (remoteWatcher.playFromUri(uri)) {
                     // give Spotify a moment, then check it actually switched
                     main.postDelayed({
-                        if (remoteWatcher.playingAlbum(title)) done(true, "media controls (" + notes.joinToString("; ") + ")")
+                        if (if (isList) remoteWatcher.playingQueue(title) else remoteWatcher.playingAlbum(title)) done(true, "media controls (" + notes.joinToString("; ") + ")")
                         else { notes += "media controls: no change"; viaAppRemote(uri, notes, done) }
                     }, 2500)
                 } else { notes += "media controls: Spotify isn't open"; viaAppRemote(uri, notes, done) }
@@ -313,6 +402,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
 
     @Volatile var contextJson = ""; private set
     @Volatile private var watching = false
+    private var lastSeenList = ""
 
     /** While PHONY is on screen, ask Spotify every few seconds whether it's playing an album. */
     fun watch(on: Boolean) {
@@ -328,8 +418,11 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
                             val j = JSONObject(body)
                             val ctxObj = j.optJSONObject("context")
                             val alb = j.optJSONObject("item")?.optJSONObject("album")
+                            val type = ctxObj?.optString("type") ?: ""
+                            val cu = ctxObj?.optString("uri") ?: ""
+                            if (type == "playlist" && cu != lastSeenList) { lastSeenList = cu; markPlayed(cu) }
                             JSONObject()
-                                .put("type", ctxObj?.optString("type") ?: "")
+                                .put("type", type)
                                 .put("uri", ctxObj?.optString("uri") ?: "")
                                 .put("album", alb?.optString("name") ?: "")
                                 .put("albumUri", alb?.optString("uri") ?: "")
@@ -362,6 +455,9 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             return c.inputStream.bufferedReader().use { it.readText() }
         } finally { c.disconnect() }
     }
+
+    /** A Web API read for the liner notes (null when signed out or it fails). */
+    fun webGet(u: String): JSONObject? = if (!signedIn) null else try { JSONObject(api("GET", u, null)) } catch (e: Exception) { null }
 
     fun release() { remote?.let { SpotifyAppRemote.disconnect(it) }; remote = null }
 

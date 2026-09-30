@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var library: Library
     private lateinit var remote: RemoteWatcher
     private lateinit var box: SpotifyBox
+    private lateinit var notes: LinerNotes
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
     private val main = Handler(Looper.getMainLooper())
@@ -83,6 +84,7 @@ class MainActivity : ComponentActivity() {
         remote = RemoteWatcher(this)
         box = SpotifyBox(this, remote) { js("window.phonyBoxChanged && window.phonyBoxChanged()") }
         intent?.data?.let { box.handleRedirect(it) }
+        notes = LinerNotes(box) { id -> js("window.phonyNotes && window.phonyNotes(${org.json.JSONObject.quote(id)})") }
         audio = getSystemService(AudioManager::class.java)
         lockOrientation()
 
@@ -298,6 +300,8 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun boxSync(force: Boolean) = box.sync(force)
         @JavascriptInterface fun getBox(): String = box.boxJson()
         @JavascriptInterface fun getCover(id: String): String = box.coverDataUrl(id)
+        /** The drawer: up to twelve playlists, most recently played first. */
+        @JavascriptInterface fun getDrawer(): String = box.drawerJson()
         /** What Spotify says it's playing: {type: "album"|"playlist"|…, uri, album, albumUri}, or "". */
         @JavascriptInterface fun spotifyContext(): String = box.contextJson
 
@@ -305,6 +309,17 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun playAlbum(uri: String, title: String) = onMain {
             box.play(uri, title) { ok, msg -> js("window.phonyPlayed && window.phonyPlayed($ok, ${org.json.JSONObject.quote(msg)})") }
         }
+
+        /** Tell the Spotify app to play a playlist; answers window.phonyPlayed(ok, message) like playAlbum. */
+        @JavascriptInterface fun playPlaylist(uri: String, name: String) = onMain {
+            box.play(uri, name) { ok, msg -> js("window.phonyPlayed && window.phonyPlayed($ok, ${org.json.JSONObject.quote(msg)})") }
+        }
+
+        // ----- the fold-out J-card -----
+        /** Fetch an album's liner notes; answers window.phonyNotes(id), then the page calls takeNotes(id). */
+        @JavascriptInterface fun fetchNotes(id: String, title: String, artist: String, albumUri: String) = notes.album(id, title, artist, albumUri)
+        @JavascriptInterface fun fetchLyrics(id: String, track: String, artist: String, album: String, durSec: Int) = notes.lyrics(id, track, artist, album, durSec)
+        @JavascriptInterface fun takeNotes(id: String): String = notes.take(id)
 
         // ----- feel -----
         @JavascriptInterface

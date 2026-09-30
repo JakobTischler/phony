@@ -141,6 +141,13 @@ class RemoteWatcher(private val ctx: Context) {
         return album.trim().equals(title.trim(), ignoreCase = true)
     }
 
+    /** Whether Spotify's player now names its queue after this playlist. */
+    fun playingQueue(title: String): Boolean {
+        val c = spotify() ?: return false
+        val q = try { c.queueTitle?.toString() } catch (e: Exception) { null } ?: return false
+        return q.trim().equals(title.trim(), ignoreCase = true)
+    }
+
     /** Called on the main thread. */
     fun command(cmd: String, arg: String) {
         val tc = controller?.transportControls ?: return

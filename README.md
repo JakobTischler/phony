@@ -18,6 +18,18 @@ Press **■** while the tape is stopped to eject it. Closed, the player slides u
 
 The first time, tap the note in the box to sign in to Spotify (once, in the browser). The first album you play asks Spotify's permission once too. Needs Spotify Premium and the Spotify app on the phone.
 
+## The drawer
+
+Under the boxes is a drawer of playlist tapes: your twelve most recently played Spotify playlists, tossed in loose. Each playlist gets its own shell (fifteen designs, after real 80s and 90s tapes) and its name written on the label in a pen of its own: ballpoint, Sharpie, felt tip, pencil, gel, or paint pen on the dark shells. The shell and pen stay with the playlist. Tap one and Spotify plays it. Start a playlist in Spotify itself and its tape goes into the player.
+
+"Recently played" comes from Spotify's recent history plus every playlist PHONY sees playing; if that's fewer than twelve, the rest are your playlists in Spotify's order. The drawer needs one more Spotify sign-in to read playlists (tap the note in the drawer).
+
+## The J-card
+
+Tap the song title and artist on the J-card (open view) and the album's J-card unfolds across the screen: the cover, the spine, both sides of the tape with running times and credits, the words to the song that's playing (they light up line by line as it plays), liner notes about the album, and the band with a photo. Swipe to unfold further; **FOLD IT UP** or tap outside to put it back.
+
+Album details and the band photo come from Spotify, the liner notes and band story from Wikipedia, the words from LRCLIB (lrclib.net, an open lyrics library). Not every song or album has all of them; the card leaves out what it can't find.
+
 ## How it's built
 
 - `app/src/main/assets/index.html` – the whole player: drawing, keys, sounds, J-card. Opens in a desktop browser too (uses a silent sample mix).
@@ -25,7 +37,8 @@ The first time, tap the note in the box to sign in to Spotify (once, in the brow
 - `PlaybackService.kt` – plays saved songs in the background (Media3), with lock-screen controls.
 - `Library.kt` – reads songs and album art from Android's media library.
 - `RemoteWatcher.kt` – follows and controls other apps' players.
-- `SpotifyBox.kt` – reads your saved albums from Spotify and tells the Spotify app what to play. Uses Spotify's App Remote library (`app/libs`, from github.com/spotify/android-sdk, Apache 2.0).
+- `SpotifyBox.kt` – reads your saved albums and recent playlists from Spotify and tells the Spotify app what to play.
+- `LinerNotes.kt` – fetches what goes on the fold-out J-card. Uses Spotify's App Remote library (`app/libs`, from github.com/spotify/android-sdk, Apache 2.0).
 
 ## Builds
 
