@@ -324,13 +324,15 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 /* ---------- the fold-out J-card (tap the song banner) ---------- */
 .nowtext{cursor:pointer;position:relative}
 .pulltab{position:absolute;top:-1.6cqw;right:-2cqw;font-family:var(--f-print);font-weight:600;font-size:2.3cqw;letter-spacing:.14em;color:#8a7a5c;padding:.5cqw 1.4cqw;border-radius:.6cqw;background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 .2cqw rgba(60,50,30,.18)}
-.fold{--pw:min(calc(88vh * .64),44vw);--ph:calc(var(--pw) / .64);--acc:#c8372d;position:absolute;inset:0;z-index:50;background:rgba(14,10,7,0);transition:background .35s;overflow:hidden}
-.fold.show{background:rgba(14,10,7,.8)}
+.fold{--pw:min(calc(88vh * .64),44vw);--ph:calc(var(--pw) / .64);--acc:#c8372d;position:absolute;inset:0;z-index:50;background:linear-gradient(90deg,rgba(14,10,7,0) 50%,rgba(14,10,7,0) 50%);transition:background .45s;overflow:hidden}
+.fold.show{background:linear-gradient(90deg,rgba(14,10,7,.8) 50%,rgba(14,10,7,.8) 50%)}
+.fold.show.atend{background:linear-gradient(90deg,rgba(14,10,7,.8) 50%,rgba(14,10,7,0) 50%)}
+.fold .foldclose{transition:opacity .3s .4s,background .3s}
 /* sideways is PHONY's own swipe (anywhere on the card); up and down scrolls a panel */
 .fold{touch-action:pan-y}
 .foldscroll{position:absolute;inset:0;overflow:hidden;display:flex;align-items:center}
 .foldscroll::-webkit-scrollbar{display:none}
-.foldstrip{display:flex;align-items:center;padding-inline:calc((100vw - 2.2 * var(--pw)) / 2);perspective:260vw}
+.foldstrip{display:flex;align-items:center;padding-left:calc((100vw - 2.2 * var(--pw)) / 2);padding-right:50vw;perspective:260vw}
 .fp{--i:0;position:relative;flex:none;width:var(--pw);height:var(--ph);max-height:92vh;container-type:size;overflow:hidden;scroll-snap-align:start;color:#2a241a;
   background:linear-gradient(180deg,#f6efdf,#ebe0c6);transform-origin:0 50%;
   transform:translateX(calc(var(--i) * -100%)) rotateY(calc(var(--f,1) * 88deg));opacity:0;
@@ -368,6 +370,10 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .ftr .n{color:#8a7a5c;text-align:right}
 .ftr .t{min-width:0}
 .ftr .d{color:#8a7a5c;font-variant-numeric:tabular-nums}
+.fp.songs .ftr{cursor:pointer;border-radius:.8cqw}
+.fp.songs .ftr:active{background:rgba(255,228,70,.35)}
+.fwords .l[data-t]{cursor:pointer}
+.fwords .l[data-t]:active{background:rgba(255,228,70,.3)}
 .ftr.on .t{background:var(--highlighter);border-radius:.6cqw .2cqw .8cqw .3cqw;box-shadow:0 0 0 .6cqw var(--highlighter)}
 .fcred{margin-top:5cqw;font-family:var(--f-print);font-weight:600;font-size:3cqw;line-height:1.45;letter-spacing:.04em;color:#6f6250}
 .fgen{display:flex;flex-wrap:wrap;gap:1.4cqw;margin:0 0 3cqw}
@@ -2054,7 +2060,7 @@ function openFold(){
 }
 function closeFold(){
   if (!foldOpen) return; foldOpen = false;
-  fold.classList.remove('show'); setTimeout(() => { if (!foldOpen){ fold.hidden = true; foldStrip.innerHTML = ''; } }, 750);
+  fold.classList.remove('show', 'atend'); setTimeout(() => { if (!foldOpen){ fold.hidden = true; foldStrip.innerHTML = ''; } }, 750);
 }
 function askNotes(al){
   const key = albumKey(al);
@@ -2147,6 +2153,7 @@ function buildFold(al){
       const tot = part.reduce((a, t) => a + (t.d || 0), 0);
       const h = el('div', 'fside', nm); if (tot) h.append(el('small', '', fmt(tot))); sb.append(h);
       part.forEach((t, i) => { const r = el('div', 'ftr'); r.dataset.t = plainSong(t.t); if (r.dataset.t === cur) r.classList.add('on');
+        r.setAttribute('role', 'button'); r.addEventListener('click', () => pickFromCard(off + i, t, n, al));
         r.append(el('span', 'n', String(off + i + 1)), el('span', 't', t.t), el('span', 'd', t.d ? fmt(t.d) : '')); sb.append(r); });
     });
   } else sb.append(el('div', 'fk', 'SONGS'), el('div', 'fwait', loading ? 'Pulling the card out of the case…' : 'No track list for this one.'));
@@ -2171,7 +2178,7 @@ function buildFold(al){
   }
   // the band
   if (n.photo || n.band){
-    const bp = panel('band'), bb = el('div', 'fbody'); bp.append(bb);
+    const bp = panel('fbandp'), bb = el('div', 'fbody'); bp.append(bb);
     bb.append(el('div', 'fk', 'THE BAND'));
     if (n.photo){ const fig = el('figure', 'fphoto'), im = new Image(); im.src = n.photo; im.alt = artist; fig.append(im, el('figcaption', '', artist)); bb.append(fig); }
     else bb.append(el('div', 'fh', artist));
@@ -2190,7 +2197,8 @@ function renderWords(){
   const synced = (L.synced || '').split('\n').map(l => l.match(/^\[(\d+):(\d+(?:\.\d+)?)\]\s?(.*)$/)).filter(Boolean);
   if (synced.length){
     foldSync = [];
-    synced.forEach(m => { const t = +m[1] * 60 + +m[2], p = el('div', 'l' + (m[3].trim() ? '' : ' gap'), m[3]); foldSync.push({t, p}); box.append(p); });
+    synced.forEach(m => { const t = +m[1] * 60 + +m[2], p = el('div', 'l' + (m[3].trim() ? '' : ' gap'), m[3]); foldSync.push({t, p}); box.append(p);
+      if (m[3].trim()){ p.dataset.t = t; p.addEventListener('click', () => seekTo(t)); } });
   } else if (L.plain){
     L.plain.split('\n').forEach(t => box.append(el('div', 'l' + (t.trim() ? '' : ' gap'), t)));
   } else { box.append(el('div', 'fwait', L.instrumental ? 'No words. It\'s an instrumental.' : 'No words on file for this one.')); return; }
@@ -2207,6 +2215,33 @@ function syncWords(){
   const p = foldSync[i].p; p.classList.add('on');
   if (performance.now() - foldTouchAt > 4000){ const body = p.closest('.fbody'); body.scrollTo({top:Math.max(0, p.offsetTop - body.clientHeight * .36), behavior:'smooth'}); }
 }
+// a song tapped on the J-card: play it (from this album)
+function pickFromCard(pos, t, n, al){
+  if (performance.now() - swipedAt < 350) return;
+  ensureAudio(); sfx('key');
+  const want = plainSong(t.t), i = S.tracks.findIndex(x => plainSong(x.title) === want);
+  if (isRemote()){
+    const q = i >= 0 ? S.tracks[i].queueId : null;
+    const uri = (n && n.uri) || (al && al.uri) || albumUriFor(al && al.title);
+    if (uri && N.playAlbumAt){ S.ctxHold = performance.now() + 6000; N.playAlbumAt(uri, pos); }
+    else if (q != null) N.remoteCmd('queue', String(q));
+    else toast('Spotify didn\'t say which album this is.');
+    return;
+  }
+  if (i >= 0){ if (S.ejected) insert(S.tape); loadTrack(i, true); if (!S.playing){ play(); syncKeys(); } }
+}
+// a lyric line tapped: jump to that moment in the song
+function seekTo(sec){
+  if (performance.now() - swipedAt < 350) return;
+  ensureAudio(); sfx('tick'); foldTouchAt = 0;
+  S.t = Math.max(0, sec - .2); S.cmdAt = performance.now();
+  if (isRemote()) N.remoteCmd('seek', String(Math.round(S.t * 1000)));
+  else if (isLocal()) N.seekTo(Math.round(S.t * 1000));
+  else if (S.src.kind === 'files') audio.currentTime = S.t;
+}
+let swipedAt = 0;
+function foldAtEnd(){ fold.classList.toggle('atend', foldScroll.scrollLeft >= foldScroll.scrollWidth - foldScroll.clientWidth - 8); }
+foldScroll.addEventListener('scroll', foldAtEnd, {passive:true});
 // swipe sideways anywhere on the card; it settles on the nearest panel (a flick goes one further)
 let sw = null, wheelT = 0;
 function foldStops(){
@@ -2231,7 +2266,7 @@ fold.addEventListener('touchmove', e => {
   foldScroll.scrollTo({left:sw.left - dx, behavior:'instant'});
   const now = performance.now(); sw.v = (t.clientX - sw.lx) / Math.max(1, now - sw.lt); sw.lx = t.clientX; sw.lt = now;
 }, {passive:false});
-const swEnd = () => { if (sw && sw.lock === 1) settleFold(sw.v); sw = null; };
+const swEnd = () => { if (sw && sw.lock === 1){ settleFold(sw.v); swipedAt = performance.now(); } sw = null; };
 fold.addEventListener('touchend', swEnd); fold.addEventListener('touchcancel', swEnd);
 // trackpads and mice, for the desktop version
 fold.addEventListener('wheel', e => {
@@ -2253,7 +2288,7 @@ function demoWords(){
 $('#nowtext').addEventListener('click', openFold);
 $('#nowtext').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openFold(); } });
 $('#foldclose').addEventListener('click', closeFold);
-foldScroll.addEventListener('click', e => { if (e.target === foldScroll || e.target === foldStrip) closeFold(); });
+foldScroll.addEventListener('click', e => { if (performance.now() - swipedAt < 350) return; if (e.target === foldScroll || e.target === foldStrip) closeFold(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && foldOpen) closeFold(); });
 
 

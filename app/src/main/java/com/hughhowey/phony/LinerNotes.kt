@@ -75,6 +75,7 @@ class LinerNotes(private val ctx: Context, private val box: SpotifyBox, private 
         if (albumId.isNullOrEmpty()) return null
         val al = sget("https://api.spotify.com/v1/albums/$albumId") ?: return null
         val artists = al.optJSONArray("artists") ?: JSONArray()
+        out.put("uri", "spotify:album:$albumId")
         out.put("title", al.optString("name", title))
             .put("artist", (0 until artists.length()).joinToString(", ") { artists.getJSONObject(it).optString("name") })
             .put("date", al.optString("release_date"))
