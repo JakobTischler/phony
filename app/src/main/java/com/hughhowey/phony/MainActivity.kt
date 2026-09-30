@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var library: Library
     private lateinit var remote: RemoteWatcher
     private lateinit var box: SpotifyBox
+    private lateinit var places: Places
     private lateinit var notes: LinerNotes
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
@@ -62,6 +63,9 @@ class MainActivity : ComponentActivity() {
             library.invalidate()
             refreshPage()
         }
+
+    private val locationLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPage() }
 
     private val tick = object : Runnable {
         override fun run() {
@@ -89,6 +93,7 @@ class MainActivity : ComponentActivity() {
         intent?.data?.let { box.handleRedirect(it) }
         notes = LinerNotes(this, box) { id -> js("window.phonyNotes && window.phonyNotes(${org.json.JSONObject.quote(id)})") }
         audio = getSystemService(AudioManager::class.java)
+        places = Places(this)
         lockOrientation()
 
         val assets = WebViewAssetLoader.Builder()
@@ -330,6 +335,13 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun playAlbumAt(uri: String, index: Int) = onMain {
             box.playAt(uri, index) { ok, msg -> if (!ok) js("window.phonyPlayed && window.phonyPlayed(false, ${org.json.JSONObject.quote("Spotify didn't skip there ($msg).")})") }
         }
+
+        // ----- ports of call: where an album was played -----
+        @JavascriptInterface fun hasLocation(): Boolean = places.hasPermission()
+        @JavascriptInterface fun requestLocation() = onMain { locationLauncher.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION) }
+        /** {lat, lon, at, place} or "" (no permission or no fix yet). */
+        @JavascriptInterface fun whereAmI(): String = places.here()
+        @JavascriptInterface fun placeName(lat: Double, lon: Double): String = places.name(lat, lon)
 
         // ----- feel -----
         @JavascriptInterface

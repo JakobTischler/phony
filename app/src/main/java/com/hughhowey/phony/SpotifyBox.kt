@@ -18,7 +18,7 @@ import java.security.SecureRandom
 
 /**
  * The tape box: the albums saved in your Spotify library, each with its cover,
- * and the drawer of playlist tapes: the twelve playlists played most recently.
+ * and the drawer of playlist tapes: the twenty playlists played most recently.
  *
  * - Reading the library uses Spotify's Web API. You sign in once in the browser;
  *   after that PHONY keeps a refresh key and never asks again.
@@ -34,7 +34,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             "playlist-read-private playlist-read-collaborative user-read-recently-played"
         private const val PLAY_SCOPE = "user-modify-playback-state"
         private const val LIST_SCOPES = "playlist-read-private user-read-recently-played"
-        const val DRAWER = 12
+        const val DRAWER = 20
     }
 
     private val prefs = ctx.getSharedPreferences("spotify", Context.MODE_PRIVATE)
@@ -260,7 +260,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     // ---------- the drawer: playlists, most recently played first ----------
 
     /**
-     * Twelve playlists. First the ones played lately (Spotify's recently-played list,
+     * Twenty playlists. First the ones played lately (Spotify's recently-played list,
      * plus every playlist PHONY has seen Spotify playing), newest first; then, if there
      * aren't twelve yet, the rest of your playlists in the order Spotify lists them.
      */

@@ -297,6 +297,8 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .blanks .gone{aspect-ratio:1000/638;width:100%;border-radius:1.2cqw;box-shadow:inset 0 0 0 .3cqw rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center}
 .blanks .gone i{font-family:var(--f-hand);font-size:5cqw;color:rgba(255,236,210,.35);font-style:normal;transform:rotate(-2deg)}
 .blanks .case.note{grid-column:1/-1;transform:none}
+.blanks button.ghost{visibility:hidden}
+.blanks button.lifted{position:fixed;z-index:200;pointer-events:none;margin:0;transition:none;transform:rotate(calc(var(--r,0deg) * .3)) scale(1.1);filter:drop-shadow(0 3cqw 3cqw rgba(0,0,0,.6))}
 .blanks button:focus-visible{outline:.5cqw solid var(--orange);outline-offset:.5cqw}
 
 /* one case, out of the box */
@@ -324,15 +326,13 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 /* ---------- the fold-out J-card (tap the song banner) ---------- */
 .nowtext{cursor:pointer;position:relative}
 .pulltab{position:absolute;top:-1.6cqw;right:-2cqw;font-family:var(--f-print);font-weight:600;font-size:2.3cqw;letter-spacing:.14em;color:#8a7a5c;padding:.5cqw 1.4cqw;border-radius:.6cqw;background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 .2cqw rgba(60,50,30,.18)}
-.fold{--pw:min(calc(88vh * .64),44vw);--ph:calc(var(--pw) / .64);--acc:#c8372d;position:absolute;inset:0;z-index:50;background:linear-gradient(90deg,rgba(14,10,7,0) 50%,rgba(14,10,7,0) 50%);transition:background .45s;overflow:hidden}
-.fold.show{background:linear-gradient(90deg,rgba(14,10,7,.8) 50%,rgba(14,10,7,.8) 50%)}
-.fold.show.atend{background:linear-gradient(90deg,rgba(14,10,7,.8) 50%,rgba(14,10,7,0) 50%)}
-.fold .foldclose{transition:opacity .3s .4s,background .3s}
+.fold{--pw:min(calc(88vh * .64),44vw);--ph:calc(var(--pw) / .64);--acc:#c8372d;position:absolute;inset:0;z-index:50;background:rgba(14,10,7,0);transition:background .35s;overflow:hidden}
+.fold.show{background:rgba(14,10,7,.8)}
 /* sideways is PHONY's own swipe (anywhere on the card); up and down scrolls a panel */
 .fold{touch-action:pan-y}
 .foldscroll{position:absolute;inset:0;overflow:hidden;display:flex;align-items:center}
 .foldscroll::-webkit-scrollbar{display:none}
-.foldstrip{display:flex;align-items:center;padding-left:calc((100vw - 2.2 * var(--pw)) / 2);padding-right:50vw;perspective:260vw}
+.foldstrip{display:flex;align-items:center;padding-inline:calc((100vw - 2.2 * var(--pw)) / 2);perspective:260vw}
 .fp{--i:0;position:relative;flex:none;width:var(--pw);height:var(--ph);max-height:92vh;container-type:size;overflow:hidden;scroll-snap-align:start;color:#2a241a;
   background:linear-gradient(180deg,#f6efdf,#ebe0c6);transform-origin:0 50%;
   transform:translateX(calc(var(--i) * -100%)) rotateY(calc(var(--f,1) * 88deg));opacity:0;
@@ -374,6 +374,19 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .fp.songs .ftr:active{background:rgba(255,228,70,.35)}
 .fwords .l[data-t]{cursor:pointer}
 .fwords .l[data-t]:active{background:rgba(255,228,70,.3)}
+/* ports of call: one line per place; plays after the first are tally marks */
+.fp.ports .fbody{background:repeating-linear-gradient(180deg,transparent 0 calc(9.4cqw - 1px),rgba(80,110,165,.25) calc(9.4cqw - 1px) 9.4cqw);background-position:0 calc(21cqw + 1px)}
+.plog{list-style:none;margin:0;padding:0}
+.plog li{display:grid;grid-template-columns:13cqw 1fr auto;align-items:end;gap:2cqw;height:9.4cqw;padding-bottom:1.6cqw;box-sizing:border-box}
+.plog .when{font-family:var(--f-print);font-weight:600;font-size:2.9cqw;letter-spacing:.06em;color:#8a7a5c;white-space:nowrap}
+.plog .where{font-size:6.2cqw;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.plog .where small{font-size:.66em;opacity:.7}
+.plog svg{height:5.4cqw;width:auto;overflow:visible}
+.plog li.first .where::before{content:"★ ";font-size:.6em;vertical-align:.2em}
+.pstamp{position:absolute;right:6cqw;top:6cqw;z-index:6;width:30cqw;height:30cqw;border-radius:50%;border:.8cqw double currentColor;color:rgba(170,40,40,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(-14deg);font-family:var(--f-print);font-weight:800;letter-spacing:.1em;mix-blend-mode:multiply;
+  -webkit-mask:radial-gradient(circle at 30% 40%,#000 60%,rgba(0,0,0,.55) 61% 64%,#000 66%),linear-gradient(#000,#000);-webkit-mask-composite:source-in}
+.pstamp b{font-size:3.4cqw;line-height:1.05}.pstamp small{font-size:2.3cqw;font-weight:600;margin-top:.8cqw}
+.pmore{font-family:var(--f-hand);font-size:5cqw;color:#8a7a5c;transform:rotate(-1.5deg);margin-top:2cqw}
 .ftr.on .t{background:var(--highlighter);border-radius:.6cqw .2cqw .8cqw .3cqw;box-shadow:0 0 0 .6cqw var(--highlighter)}
 .fcred{margin-top:5cqw;font-family:var(--f-print);font-weight:600;font-size:3cqw;line-height:1.45;letter-spacing:.04em;color:#6f6250}
 .fgen{display:flex;flex-wrap:wrap;gap:1.4cqw;margin:0 0 3cqw}
@@ -399,6 +412,11 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .deco > *{position:absolute}
 .secret{pointer-events:auto;cursor:default;-webkit-tap-highlight-color:transparent}
 #inner .deco > *{zoom:1.9}
+/* the pencil: comes in from the top right, the way a right hand would hold it */
+.pencil{position:absolute;left:0;top:0;width:0;height:0;z-index:8;pointer-events:none;opacity:0;transition:opacity .12s}
+.pencil.on{opacity:1}
+.pencil .pwob{position:absolute;left:0;top:0;transform-origin:0 50%;transition:transform .22s cubic-bezier(.2,.8,.3,1)}
+.pencil svg{display:block;width:150cqw;height:5.4cqw;margin-top:-2.7cqw;filter:drop-shadow(-1.4cqw 2.4cqw 1.6cqw rgba(0,0,0,.45))}
 .deckfull.swapping{animation:swapshake .5s cubic-bezier(.3,.8,.3,1)}
 .plate{padding:.8cqw 2cqw;border-radius:3cqw;background:linear-gradient(180deg,#eef0f2,#aab0b6);box-shadow:0 .3cqw .5cqw rgba(0,0,0,.45),inset 0 .2cqw 0 #fff;font-family:var(--f-device);font-size:1.9cqw;letter-spacing:.18em;color:#2b3036}
 .walkman.swapping{animation:swapshake .5s cubic-bezier(.3,.8,.3,1)}
@@ -644,6 +662,22 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
   <div class="half">
     <div class="deckfull brushed">
       <div class="deck"><canvas data-mode="deck"></canvas></div>
+      <div class="pencil" id="pencil" aria-hidden="true"><div class="pwob"><svg viewBox="0 0 1000 40" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="pb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".3" stop-color="#f7c417"/><stop offset=".34" stop-color="#e3aa0a"/><stop offset=".66" stop-color="#f2b90f"/><stop offset=".7" stop-color="#d59a06"/><stop offset="1" stop-color="#b98300"/></linearGradient>
+          <linearGradient id="pw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d9a8"/><stop offset=".5" stop-color="#e8bf85"/><stop offset="1" stop-color="#c99a5c"/></linearGradient>
+          <linearGradient id="pf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f3f4"/><stop offset=".45" stop-color="#b6bcc1"/><stop offset=".55" stop-color="#8e959b"/><stop offset="1" stop-color="#d7dbde"/></linearGradient>
+          <linearGradient id="pe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9fae"/><stop offset=".5" stop-color="#f07487"/><stop offset="1" stop-color="#c9566a"/></linearGradient>
+        </defs>
+        <path d="M0 20 L22 17 L22 23 Z" fill="#3b3b3f"/>
+        <path d="M22 17 L90 3 L90 37 L22 23 Z" fill="url(#pw)"/>
+        <path d="M90 3 Q84 8 90 11 Q84 16 90 20 Q84 25 90 29 Q84 34 90 37" fill="none" stroke="#b98300" stroke-width="2"/>
+        <rect x="90" y="3" width="800" height="34" fill="url(#pb)"/>
+        <text x="330" y="25" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-weight="600" font-size="13" letter-spacing="3" fill="#2a2210" opacity=".75">HB · No. 2 · No. 2 · HB · SOFT · MADE IN U.S.A.</text>
+        <rect x="890" y="2" width="46" height="36" fill="url(#pf)"/>
+        <path d="M896 2 V38 M904 2 V38 M924 2 V38 M932 2 V38" stroke="#8e959b" stroke-width="1.5"/>
+        <rect x="936" y="3" width="64" height="34" rx="8" fill="url(#pe)"/>
+      </svg></div></div>
       <div class="deco"></div>
     </div>
   </div>
@@ -775,7 +809,7 @@ const labels = {
     c.textAlign = 'left'; c.textBaseline = 'alphabetic';
     c.fillStyle = '#fff3df'; fit(c, (A.title || '').toUpperCase(), 88, 124, 820, 62, PRINT, '800');
     c.fillStyle = 'rgba(255,243,223,.85)'; fit(c, (A.artist || '').toUpperCase().split('').join(' '), 90, 160, 820, 24, PRINT, '600');
-    if (!info.noTrack) c.font = `600 30px ${PRINT}`, c.fillStyle = '#fff3df', fit(c, `A${info.idx + 1}  ${info.cur.title.toUpperCase()}`, 90, 438, 560, 30, PRINT, '600');
+    if (!info.noTrack) c.font = `600 30px ${PRINT}`, c.fillStyle = '#fff3df', fit(c, `${info.side || 'A'}${(info.sidePos != null ? info.sidePos : info.idx) + 1}  ${info.cur.title.toUpperCase()}`, 90, 438, 560, 30, PRINT, '600');
     // wear: fade, yellow, scratches, rubbed edges, a stain and a torn corner
     c.globalCompositeOperation = 'saturation'; c.fillStyle = 'rgba(128,128,128,.42)'; c.fillRect(60, 50, 880, 420);
     c.globalCompositeOperation = 'multiply'; c.fillStyle = 'rgba(222,196,150,.4)'; c.fillRect(60, 50, 880, 420);
@@ -1109,14 +1143,50 @@ function tapeAt(i){ return i === PL_TAPE ? DESIGNS[plLook(S.playlist || plainPl(
 const audio = new Audio(); audio.preload = 'auto'; audio.preservesPitch = false; audio.webkitPreservesPitch = false;
 const isRemote = () => S.src.kind === 'remote', isLocal = () => S.src.kind === 'local';
 const dur = i => (S.tracks[i] && S.tracks[i].dur) || 210;
-function sideLen(){ return isRemote() ? REMOTE_SIDE : S.tracks.reduce((s, _, i) => s + dur(i), 0) + 24; }
+/* ---------- sides: an album plays like a real cassette. Side A is the first half of the
+   songs (the J-card splits them the same way); at the end of it the tape stops and you flip it.
+   The silver digital player has auto reverse and carries on by itself. ---------- */
+S.side = 'A'; S.sideEnd = false; S.flipped = false;
+const sidesOn = () => S.albumMode && S.tape === ALBUM_TAPE && S.tracks.length >= 2 && !S.tracks[0].placeholder;
+const half = () => Math.ceil(S.tracks.length / 2);
+const sideOf = i => i < half() ? 'A' : 'B';
+const autoReverse = () => typeof SKINS !== 'undefined' && SKINS[skinI].id === 'digital';
+function sideRange(){ return S.side === 'B' ? [half(), S.tracks.length] : [0, half()]; }
+function sideLen(){
+  if (sidesOn()){ const [a, b] = sideRange(); let t = 0; for (let i = a; i < b; i++) t += dur(i); return t + 12; }
+  return isRemote() ? REMOTE_SIDE : S.tracks.reduce((s, _, i) => s + dur(i), 0) + 24;
+}
 function posSec(){
+  if (sidesOn()){ const [a] = sideRange(); let t = 0; for (let i = a; i < S.idx; i++) t += dur(i); return t + S.t; }
   if (isRemote()) return (S.r.done + S.t) % REMOTE_SIDE;
   let s = 0; for (let i = 0; i < S.idx; i++) s += dur(i); return s + S.t;
 }
+// the tape runs out at the end of Side A
+function endSideA(){
+  if (autoReverse()){
+    // auto reverse: a clunk, the reels change direction, and Side B plays
+    sfx('latch'); S.side = 'B'; S.flipped = false; refreshShells(); tapeChanged(); toSideB(); return;
+  }
+  pause(); S.cue = 0; S.sideEnd = true; S.t = dur(S.idx); sfx('pop'); syncKeys(); trackChanged();
+}
+// ■ at the end of Side A: out it comes, over, and back in
+function flipTape(){
+  S.sideEnd = false; S.flipped = true; S.ejected = true; sfx('eject'); syncKeys();
+  setTimeout(() => { S.side = 'B'; S.dispP = 0; refreshShells(); tapeChanged(); S.ejected = false; sfx('insert'); }, 520);
+}
+function toSideB(){
+  S.flipped = false; const b = half();
+  if (isRemote()){ N.remoteCmd('next', ''); S.playing = true; S.cmdAt = performance.now(); setTimeout(() => N.remoteCmd('play', ''), 350); }
+  else { S.idx = b; S.t = 0; if (S.src.kind !== 'demo') loadTrack(b, true); else trackChanged(); if (!S.playing) play(); }
+  syncKeys();
+}
+// winding back from the end of Side A: the tape is playable again
+function unEnd(){ if (S.flipped){ S.side = 'A'; S.dispP = 1; refreshShells(); } S.sideEnd = false; S.flipped = false; trackChanged(); }
+function newTape(){ S.side = 'A'; S.sideEnd = false; S.flipped = false; }
 function infoFor(i){
+  if (S.flipped) i = half(); // flipped and waiting: the label shows what's first on Side B
   const pl = S.tape === PL_TAPE && (S.playlist || plainPl()), lk = pl && plLook(pl);
-  return {title: pl ? pl.name : S.src.title, side:'A', idx:i, cur:S.tracks[i] || {title:'—', artist:''}, pen: lk ? PENS[lk.p] : null, tilt: lk ? lk.t : 0};
+  return {title: pl ? pl.name : S.src.title, side:S.side || 'A', idx:i, sidePos: sidesOn() && S.side === 'B' ? i - half() : i, cur:S.tracks[i] || {title:'—', artist:''}, pen: lk ? PENS[lk.p] : null, tilt: lk ? lk.t : 0};
 }
 
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -1180,10 +1250,12 @@ function pause(){
   else if (S.src.kind === 'files') audio.pause();
 }
 function next(){
+  if (S.sideEnd || S.flipped) return; // the tape is at the end of the side
   if (isRemote()){ N.remoteCmd('next', ''); return; }
   if (S.idx < S.tracks.length - 1) loadTrack(S.idx + 1, true); else endOfSide();
 }
 function prev(){
+  if (S.sideEnd || S.flipped) unEnd();
   if (isRemote()){ N.remoteCmd('prev', ''); return; }
   if (S.t > 3){ S.t = 0; if (isLocal()) N.seekTo(0); else if (S.src.kind === 'files') audio.currentTime = 0; }
   else loadTrack(S.idx - 1, true);
@@ -1218,11 +1290,15 @@ function syncKeys(){ $$('.key[data-k=play]').forEach(k => k.classList.toggle('la
 let holdTimer = null, holding = false;
 function keyDown(k, el){
   ensureAudio(); el.classList.add('down');
-  if (k === 'play'){ if (S.ejected) { sfx('tick'); return; } if (S.playing){ pause(); sfx('pop'); } else { play(); sfx('latch'); } syncKeys(); return; }
-  if (k === 'stop'){ sfx('key'); if (S.ejected) insert(S.tape); else if (S.playing || S.cue) { pause(); S.cue = 0; syncKeys(); } else eject(); return; }
+  if (k === 'play'){
+    if (S.ejected || S.sideEnd) { sfx('tick'); return; }
+    if (S.flipped){ sfx('latch'); toSideB(); return; }
+    if (S.playing){ pause(); sfx('pop'); } else { play(); sfx('latch'); } syncKeys(); return;
+  }
+  if (k === 'stop'){ sfx('key'); if (S.ejected) insert(S.tape); else if (S.sideEnd) flipTape(); else if (S.playing || S.cue) { pause(); S.cue = 0; syncKeys(); } else eject(); return; }
   if (S.ejected){ sfx('tick'); return; }
   sfx('key'); holding = false; clearTimeout(holdTimer);
-  holdTimer = setTimeout(() => { holding = true; S.cue = k === 'ff' ? 1 : -1; S.cueBase = null; }, 320);
+  holdTimer = setTimeout(() => { holding = true; if (S.sideEnd || S.flipped){ if (k === 'ff') return; unEnd(); } S.cue = k === 'ff' ? 1 : -1; S.cueBase = null; }, 320);
 }
 function keyUp(k, el){
   el.classList.remove('down');
@@ -1358,10 +1434,14 @@ function markJList(){
   const cur = $('#jlist li.cur'); if (cur && S.open) cur.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 function trackChanged(){
+  if (sidesOn()){ if (!S.sideEnd && !S.flipped){ const sd = sideOf(S.idx); if (sd !== S.side){ S.side = sd; S.dispP = sd === 'B' && autoReverse() ? 1 : 0; $('#jtype') && tapeChanged(); } } }
+  else if (S.side !== 'A'){ newTape(); }
   refreshShells(); markJList();
   const tr = S.tracks[S.idx] || {title:'', artist:''};
   $('#nowtitle').textContent = tr.title; $('#nowartist').textContent = tr.artist || '';
-  $('#nowlabel').textContent = isRemote() ? `NOW PLAYING · ${S.src.app || 'ANOTHER APP'}`.toUpperCase() : `NOW PLAYING · ${tapeAt(S.tape).printed ? 'A' : 'TRACK '}${S.idx + 1}`;
+  $('#nowlabel').textContent = isRemote() ? `NOW PLAYING · ${S.src.app || 'ANOTHER APP'}`.toUpperCase() : (sidesOn() ? `NOW PLAYING · ${S.side}${S.idx - (S.side === 'B' ? half() : 0) + 1}` : `NOW PLAYING · ${tapeAt(S.tape).printed ? 'A' : 'TRACK '}${S.idx + 1}`);
+  if (S.sideEnd) $('#nowlabel').textContent = 'END OF SIDE A · PRESS ■ TO FLIP';
+  else if (S.flipped) $('#nowlabel').textContent = 'SIDE B · PRESS ▶';
   if (foldOpen) foldTrackChanged();
 }
 function tapeChanged(){
@@ -1375,7 +1455,7 @@ function tapeChanged(){
   } else {
     const st = $('#stripes'); st.innerHTML = '';
     tp.jc.stripes.forEach((col, i) => { const e = document.createElement('i'); e.style.background = col; e.style.height = ['3.6cqw', '1.6cqw', '.8cqw'][i]; e.style.marginTop = i ? '.5cqw' : '1.4cqw'; st.append(e); });
-    $('#jtype').textContent = tp.jc.type + ' · SIDE A';
+    $('#jtype').textContent = tp.jc.type + ' · SIDE ' + (S.side || 'A');
     const pl = S.tape === PL_TAPE && (S.playlist || plainPl()), pen = pl && PENS[plLook(pl).p], mt = $('#mixtitle');
     mt.textContent = pl ? pl.name : S.src.title;
     // the J-card spine is written with the same pen as the tape (unless it's a pen for black shells)
@@ -1409,7 +1489,7 @@ function setAlbum(title, artist, dataUrl, key){
 }
 // switching between an album and a playlist starts the song list fresh
 function setAlbumMode(on){
-  if (on === S.albumMode) return; S.albumMode = on; S.r.hist = [];
+  if (on === S.albumMode) return; S.albumMode = on; S.r.hist = []; newTape();
   if (on){ S.playlist = null; swapTo(ALBUM_TAPE, true); }
   else { if (!S.playlist) S.playlist = plainPl(); swapTo(PL_TAPE, true, true); }
   if (isRemote() && S.r.cur) buildRemoteTracks(S.r.queue);
@@ -1550,7 +1630,7 @@ function albumUriFor(album){
 }
 
 function chooseSource(src, restoring, keepTape){
-  if (!restoring){ pause(); syncKeys(); } S.cue = 0;
+  if (!restoring){ pause(); syncKeys(); } S.cue = 0; newTape();
   S.r = {key:'', cur:null, hist:[], done:0, artKey:'', queue:[]};
   S.albumMode = false; S.playlist = null;
   if (src.kind === 'remote'){
@@ -1650,18 +1730,23 @@ function loop(now){
   pollNative(now);
   followPhoneVolume(now);
   if (S.cue && !S.ejected){
-    S.t += S.cue * 9 * dt;
-    if (S.src.kind === 'files'){ const nt = audio.currentTime + S.cue * 9 * dt; if (nt >= 0 && nt < (audio.duration || 1e9)) audio.currentTime = nt; S.t = audio.currentTime; }
+    const ck = S.cueK || 9;
+    S.t += S.cue * ck * dt;
+    if (S.src.kind === 'files'){ const nt = audio.currentTime + S.cue * ck * dt; if (nt >= 0 && nt < (audio.duration || 1e9)) audio.currentTime = nt; S.t = audio.currentTime; }
     else if (isLocal() && now - cueSeekAt > 120){ cueSeekAt = now; N.seekTo(Math.max(0, Math.round(S.t * 1000))); }
     if (isRemote()) S.t = Math.max(0, Math.min(S.t, dur(S.idx) - 1));
   } else if (S.playing && !S.ejected){
     if (S.src.kind === 'demo') S.t += dt * S.motor; else if (S.src.kind === 'files') S.t = audio.currentTime || 0;
   }
-  if (S.src.kind === 'demo' || S.src.kind === 'files' || (isLocal() && S.cue)){
-    if (S.t >= dur(S.idx)){ if (S.idx < S.tracks.length - 1){ S.idx++; S.t = 0; if (S.src.kind !== 'demo') loadTrack(S.idx, true); else trackChanged(); } else endOfSide(); }
+  const atEnd = S.sideEnd || S.flipped;
+  if (!atEnd && sidesOn() && S.side === 'A' && S.idx === half() - 1 && S.playing && !S.cue && !S.ejected && (isRemote() || isLocal()) && S.t >= dur(S.idx) - .7 && dur(S.idx) > 5) endSideA();
+  if (!atEnd && (S.src.kind === 'demo' || S.src.kind === 'files' || (isLocal() && S.cue))){
+    // the tape runs out at the end of Side A, even while winding
+    if (S.t >= dur(S.idx) && sidesOn() && S.side === 'A' && S.idx === half() - 1){ S.cue = 0; endSideA(); }
+    else if (S.t >= dur(S.idx)){ if (S.idx < S.tracks.length - 1){ S.idx++; S.t = 0; if (S.src.kind !== 'demo') loadTrack(S.idx, true); else trackChanged(); } else endOfSide(); }
     else if (S.t < 0){ if (S.idx > 0){ S.idx--; S.t = dur(S.idx) - .1; if (S.src.kind !== 'demo'){ loadTrack(S.idx, true); if (isLocal()) N.seekTo(Math.round(S.t * 1000)); else audio.currentTime = S.t; } else trackChanged(); } else { S.t = 0; S.cue = 0; } }
   }
-  const L = sideLen(), p = Math.max(0, Math.min(1, posSec() / L));
+  const L = sideLen(), pp = Math.max(0, Math.min(1, posSec() / L)), p = sidesOn() && S.side === 'B' && autoReverse() ? 1 - pp : (S.sideEnd ? 1 : pp);
   // winding is quick but visible: never longer than about 2.5 s for a whole side
   const maxStep = Math.max(16 / L, .4) * dt, move = Math.max(-maxStep, Math.min(maxStep, p - S.dispP));
   S.dispP += move;
@@ -1689,6 +1774,7 @@ function loop(now){
     if (now - timeTick > 250){ timeTick = now; $('#nowtime').textContent = `${fmt(Math.max(0, S.t))} / ${fmt(dur(S.idx))}`; }
     if (foldOpen) syncWords();
   }
+  notePort(now);
   wins.forEach(drawWin);
   requestAnimationFrame(loop);
 }
@@ -1727,10 +1813,10 @@ function sortCases(list){
 }
 let CASES = N ? [] : sortCases(DEMO_CASES.slice());
 /* ---------- the drawer: the twelve playlists played most recently ---------- */
-const DRAWER = 12;
+const DRAWER = 20;
 // In the app these come from Spotify. In this mockup they're invented.
-const DEMO_PLAYLISTS = ['anchor watch', 'Deck Scrub Sunday', 'night passage', 'BANGERS (do not share)', 'rainy harbour', 'writing — no words', 'kitchen dancing', '90s alt forever', 'Carnival warm-up', 'slow boat', 'songs my dad played', 'car karaoke!!', 'Tuesday']
-  .map((name, i) => ({id:'p' + i, uri:'spotify:playlist:p' + i, name, count:[34, 18, 52, 71, 26, 40, 22, 95, 30, 17, 44, 61, 12][i]}));
+const DEMO_PLAYLISTS = ['anchor watch', 'Deck Scrub Sunday', 'night passage', 'BANGERS (do not share)', 'rainy harbour', 'writing — no words', 'kitchen dancing', '90s alt forever', 'Carnival warm-up', 'slow boat', 'songs my dad played', 'car karaoke!!', 'Tuesday', 'Rap', 'soca 2026', 'sunday morning coffee', 'long watch (3am)', 'road trip', 'Motown', 'for Shay', 'gym, ugh', 'Outkast only']
+  .map((name, i) => ({id:'p' + i, uri:'spotify:playlist:p' + i, name, count:[34, 18, 52, 71, 26, 40, 22, 95, 30, 17, 44, 61, 12, 88, 23, 31, 47, 66, 29, 14, 38, 20][i]}));
 let PLAYLISTS = N ? [] : DEMO_PLAYLISTS.slice(0, DRAWER);
 let LOOKS = store.get('plLooks', {});
 // looks saved by an earlier build named shells by position, with the five old tapes first
@@ -1772,8 +1858,8 @@ function drawerEl(){
   if (N && boxStatus.signedIn && !boxStatus.canPlaylists){ grid.append(note('Tap here to let PHONY see your playlists.', () => N.spotifyLogin())); return dr; }
   if (N && !boxStatus.signedIn) return null;
   if (!PLAYLISTS.length){ grid.append(note(boxStatus.state === 'loading' ? 'Fetching your playlists…' : 'Play a playlist in Spotify and its tape lands here.')); return dr; }
-  PLAYLISTS.slice(0, DRAWER).forEach(pl => {
-    const lk = plLook(pl), b = document.createElement('button');
+  arranged().forEach(pl => {
+    const lk = plLook(pl), b = document.createElement('button'); b.dataset.id = pl.id;
     b.style.setProperty('--r', lk.r + 'deg'); b.style.setProperty('--x', lk.x + 'cqw'); b.style.setProperty('--y', lk.y + 'cqw');
     b.setAttribute('aria-label', 'Play the playlist ' + pl.name);
     if (S.tape === PL_TAPE && S.playlist && S.playlist.uri === pl.uri){
@@ -1781,10 +1867,69 @@ function drawerEl(){
     } else b.append(plThumb(pl));
     const nm = document.createElement('b'); nm.textContent = pl.name; b.append(nm);
     if (pl.count){ const sm = document.createElement('small'); sm.textContent = pl.count + (pl.count === 1 ? ' SONG' : ' SONGS'); b.append(sm); }
-    b.addEventListener('click', () => { ensureAudio(); sfx('tick'); loadPlaylist(pl); });
+    b.addEventListener('click', e => { if (performance.now() - droppedAt < 400){ e.preventDefault(); return; } ensureAudio(); sfx('tick'); loadPlaylist(pl); });
+    armDrag(b, grid);
     grid.append(b);
   });
   return dr;
+}
+// the drawer keeps the order you put the tapes in; a playlist that's new to the drawer lands on top
+function arranged(){
+  const mine = store.get('drawerOrder', []), list = PLAYLISTS.slice(0, DRAWER);
+  if (!mine.length) return list;
+  const at = new Map(mine.map((id, i) => [id, i]));
+  return [...list.filter(p => !at.has(p.id)), ...list.filter(p => at.has(p.id)).sort((a, b) => at.get(a.id) - at.get(b.id))];
+}
+// press and hold a tape to pick it up, drag it, let go to drop it
+let droppedAt = 0;
+function armDrag(b, grid){
+  let hold = 0, drag = null;
+  const bay = () => b.closest('.boxbay');
+  const down = e => {
+    if (e.button > 0) return;
+    const x0 = e.clientX, y0 = e.clientY;
+    hold = setTimeout(() => {
+      const r = b.getBoundingClientRect();
+      drag = {dx:x0 - r.left, dy:y0 - r.top, x:x0, y:y0, ph:b.cloneNode(true)};
+      drag.ph.classList.add('ghost'); b.after(drag.ph);
+      b.classList.add('lifted'); b.style.width = r.width + 'px'; place(x0, y0);
+      sfx('tick'); try { N && N.haptic(2); } catch (err) {}
+      drag.raf = requestAnimationFrame(edge);
+    }, 380);
+    b._start = {x:x0, y:y0};
+  };
+  const place = (x, y) => { drag.x = x; drag.y = y; b.style.left = (x - drag.dx) + 'px'; b.style.top = (y - drag.dy) + 'px'; };
+  // near the top or bottom of the box, the box scrolls
+  const edge = () => { if (!drag) return; const bb = bay().getBoundingClientRect(), z = bb.height * .12;
+    if (drag.y < bb.top + z) bay().scrollTop -= 9; else if (drag.y > bb.bottom - z) bay().scrollTop += 9;
+    reslot(); drag.raf = requestAnimationFrame(edge); };
+  const reslot = () => {
+    const over = [...grid.children].filter(c => c !== b && c !== drag.ph && c.dataset.id);
+    let best = null, bd = 1e9;
+    over.forEach(c => { const r = c.getBoundingClientRect(), d = Math.hypot(r.left + r.width / 2 - drag.x, r.top + r.height / 2 - drag.y); if (d < bd){ bd = d; best = c; } });
+    if (!best) return;
+    const r = best.getBoundingClientRect(), before = drag.y < r.top + r.height / 2 - r.height * .15 || (Math.abs(drag.y - (r.top + r.height / 2)) < r.height * .35 && drag.x < r.left + r.width / 2);
+    const ref = before ? best : best.nextSibling;
+    if (ref !== drag.ph && ref !== drag.ph.nextSibling) grid.insertBefore(drag.ph, ref);
+  };
+  const move = e => {
+    if (!drag){ if (b._start && Math.hypot(e.clientX - b._start.x, e.clientY - b._start.y) > 10) clearTimeout(hold); return; }
+    place(e.clientX, e.clientY); reslot();
+  };
+  const up = () => {
+    clearTimeout(hold); b._start = null;
+    if (!drag) return;
+    cancelAnimationFrame(drag.raf); drag.ph.replaceWith(b); b.classList.remove('lifted'); b.style.left = b.style.top = b.style.width = '';
+    drag = null; droppedAt = performance.now(); sfx('key');
+    store.set('drawerOrder', [...grid.children].map(c => c.dataset.id).filter(Boolean));
+    // the other view's drawer follows
+    $$('.boxbay').forEach(bb => { if (!bb.contains(grid)) renderBox(bb); });
+  };
+  b.addEventListener('pointerdown', e => { down(e); addEventListener('pointermove', move); addEventListener('pointerup', end); addEventListener('pointercancel', end); });
+  const end = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', end); removeEventListener('pointercancel', end); up(); };
+  // once a tape is up, the finger drags it instead of scrolling the box
+  b.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, {passive:false});
+  b.addEventListener('contextmenu', e => e.preventDefault());
 }
 function loadPlaylist(pl){
   S.boxAlbum = null; S.ctxHold = performance.now() + 9000; S.expect = S.r.key || null;
@@ -1801,7 +1946,7 @@ function loadPlaylist(pl){
   S.src = {kind:'demo', title:pl.name}; S.tracks = DEMO.slice().sort(() => r() - .5); S.idx = 0; S.t = 0; S.dispP = 0;
   S.playlist = pl; S.albumMode = false; renderJList();
   // most recently played goes to the front
-  PLAYLISTS = [pl, ...PLAYLISTS.filter(p => p !== pl)];
+  if (!store.get('drawerOrder', []).length) PLAYLISTS = [pl, ...PLAYLISTS.filter(p => p !== pl)];
   insert(PL_TAPE); renderBoxes();
   setTimeout(() => { if (!S.playing){ play(); sfx('latch'); syncKeys(); } }, 600);
 }
@@ -1990,7 +2135,7 @@ function showCase(al, bay){
   });
 }
 function loadFromBox(al){
-  S.boxAlbum = {id:al.id, title:al.title}; S.playlist = null; S.ctxHold = performance.now() + 9000; S.expect = S.r.key || null;
+  newTape(); S.boxAlbum = {id:al.id, title:al.title}; S.playlist = null; S.ctxHold = performance.now() + 9000; S.expect = S.r.key || null;
   if (N){
     N.playAlbum(al.uri, al.title);
     if (N.hasListenerAccess()) chooseSource({kind:'remote'}, true, true);
@@ -2060,7 +2205,7 @@ function openFold(){
 }
 function closeFold(){
   if (!foldOpen) return; foldOpen = false;
-  fold.classList.remove('show', 'atend'); setTimeout(() => { if (!foldOpen){ fold.hidden = true; foldStrip.innerHTML = ''; } }, 750);
+  fold.classList.remove('show'); setTimeout(() => { if (!foldOpen){ fold.hidden = true; foldStrip.innerHTML = ''; } }, 750);
 }
 function askNotes(al){
   const key = albumKey(al);
@@ -2185,6 +2330,29 @@ function buildFold(al){
     if (n.genres && n.genres.length){ const g = el('div', 'fgen'); n.genres.forEach(x => g.append(el('span', '', x))); bb.append(g); }
     if (n.band){ paras(bb, n.band); bb.append(el('div', 'fsrc', 'FROM WIKIPEDIA · CC BY-SA')); }
   }
+  // ports of call: the last page. One line per place; each play there after the first is a tally mark.
+  const plog = portsFor(foldKey);
+  const pp = panel('ports'), pb = el('div', 'fbody'); pp.append(pb);
+  pb.append(el('div', 'fk', 'PORTS OF CALL'), el('div', 'fh', 'Where it has played'));
+  if (N && !N.hasLocation()){
+    const ask = el('div', 'fwait', 'Tap here and PHONY will note where this tape plays.'); ask.style.cursor = 'pointer';
+    ask.addEventListener('click', () => N.requestLocation()); pb.append(ask);
+  } else if (!plog.length){
+    pb.append(el('div', 'fwait', 'Nowhere yet. Let a song play through and the first port goes here.'));
+  } else {
+    const ul = el('ul', 'plog'), pens = [['"Reenie Beanie"', '#1d3c8f', 1], ['"Nothing You Could Do"', '#2a2a30', .7], ['Caveat', '#9c2a2a', .92], ['"Gochi Hand"', '#1d5a3a', .78], ['"Reenie Beanie"', '#3f3f44', 1]];
+    plog.forEach((e, i) => {
+      // each line keeps the pen it was first written in
+      const r = rng(Math.round(e.first / 1000)), pen = pens[Math.floor(r() * pens.length)];
+      const wh = el('span', 'where', e.place || coords(e.lat, e.lon)); wh.style.fontFamily = pen[0]; wh.style.color = pen[1]; wh.style.fontSize = (6.2 * pen[2]).toFixed(2) + 'cqw'; wh.style.transform = `rotate(${((r() - .5) * 3).toFixed(2)}deg)`;
+      const li = el('li', i === 0 ? 'first' : ''); li.append(el('span', 'when', monthYear(e.first)), wh); li.insertAdjacentHTML('beforeend', tally(e.plays - 1, pen[1]));
+      ul.append(li);
+    });
+    pb.append(ul);
+    // the front gets a stamp: where it was first played
+    const f0 = plog[0], st = el('div', 'pstamp'); st.append(el('b', '', (f0.place || coords(f0.lat, f0.lon)).split(',')[0].toUpperCase()), el('small', '', 'FIRST PLAYED · ' + monthYear(f0.first).toUpperCase()));
+    front.append(st);
+  }
   foldScroll.scrollLeft = keep;
   renderWords();
 }
@@ -2240,8 +2408,6 @@ function seekTo(sec){
   else if (S.src.kind === 'files') audio.currentTime = S.t;
 }
 let swipedAt = 0;
-function foldAtEnd(){ fold.classList.toggle('atend', foldScroll.scrollLeft >= foldScroll.scrollWidth - foldScroll.clientWidth - 8); }
-foldScroll.addEventListener('scroll', foldAtEnd, {passive:true});
 // swipe sideways anywhere on the card; it settles on the nearest panel (a flick goes one further)
 let sw = null, wheelT = 0;
 function foldStops(){
@@ -2273,6 +2439,63 @@ fold.addEventListener('wheel', e => {
   const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0); if (!d) return;
   e.preventDefault(); foldScroll.scrollLeft += d; clearTimeout(wheelT); wheelT = setTimeout(() => settleFold(0), 140);
 }, {passive:false});
+// tally marks, the way you'd count on the back of a J-card: four strokes and a slash
+function tally(k, color){
+  if (k <= 0) return '<span></span>';
+  let x = 0, d = '', r = rng(k * 7 + 3);
+  for (let g = 0; g < Math.ceil(k / 5); g++){
+    const n = Math.min(5, k - g * 5);
+    for (let i = 0; i < Math.min(4, n); i++){ const j = (r() - .5) * 1.4; d += `M${x + i * 5 + j} ${2 + r()}L${x + i * 5 - j} ${20 - r()}`; }
+    if (n === 5) d += `M${x - 3} ${16 + r() * 2}L${x + 19} ${5 + r() * 2}`;
+    x += Math.min(4, n) * 5 + 8;
+  }
+  return `<svg viewBox="-4 0 ${x + 2} 22"><path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" opacity=".85"/></svg>`;
+}
+/* ---------- ports of call: where each album has played ---------- */
+// {albumKey: [{place, lat, lon, first, last, plays}]}, oldest first
+let PORTS = store.get('ports', {});
+const monthYear = t => { const d = new Date(t); return d.toLocaleString('en', {month:'short'}) + " '" + String(d.getFullYear()).slice(2); };
+const coords = (la, lo) => `${Math.abs(la).toFixed(1)}°${la >= 0 ? 'N' : 'S'} ${Math.abs(lo).toFixed(1)}°${lo >= 0 ? 'E' : 'W'}`;
+function portsFor(key){
+  if (!N) return (PORTS[key] || []).length ? PORTS[key] : demoPorts();
+  const list = PORTS[key] || [];
+  // name spots logged at sea, now that there may be a signal
+  let changed = false;
+  list.forEach(e => { if (!e.place){ const nm = N.placeName(e.lat, e.lon); if (nm){ e.place = nm; changed = true; } } });
+  if (changed){ mergePorts(list); store.set('ports', PORTS); }
+  return list;
+}
+function mergePorts(list){
+  for (let i = list.length - 1; i > 0; i--) for (let j = 0; j < i; j++) if (list[j].place && list[j].place === list[i].place){
+    list[j].plays += list[i].plays; list[j].last = Math.max(list[j].last, list[i].last); list.splice(i, 1); break; }
+}
+// an album counts as played somewhere once a song has played 30 seconds; again there after six hours
+let portAlbum = '', portDone = false, portT = 0;
+function notePort(now){
+  if (!N || now - portT < 2000) return; portT = now;
+  if (!S.albumMode || !S.playing || !ALBUM.title) return;
+  const key = albumKey({title:ALBUM.title, artist:ALBUM.artist || (S.tracks[S.idx] || {}).artist || ''});
+  if (key !== portAlbum){ portAlbum = key; portDone = false; }
+  if (portDone || S.t < 30 || !N.hasLocation()) return;
+  let here = null; try { here = JSON.parse(N.whereAmI() || 'null'); } catch (e) {}
+  if (!here) return;
+  portDone = true;
+  const list = PORTS[key] || (PORTS[key] = []), t = Date.now();
+  const near = e => e.place && here.place ? e.place === here.place : Math.hypot(e.lat - here.lat, e.lon - here.lon) < .03;
+  const e = list.find(near);
+  if (e){ if (t - e.last > 6 * 3600e3){ e.plays++; } e.last = t; if (!e.place && here.place) e.place = here.place; }
+  else list.push({place:here.place || '', lat:+here.lat.toFixed(3), lon:+here.lon.toFixed(3), first:t, last:t, plays:1});
+  store.set('ports', PORTS);
+}
+function demoPorts(){
+  const at = (y, m) => new Date(y, m, 5 + (m * 7) % 20).getTime();
+  return [
+    ['English Harbour, Antigua', 2026, 2, 3], ['Deshaies, Guadeloupe', 2026, 2, 1], ['Portsmouth, Dominica', 2026, 3, 2], ['Rodney Bay, St Lucia', 2026, 3, 6],
+    ['Admiralty Bay, Bequia', 2026, 4, 9], ['Salt Whistle Bay, Mayreau', 2026, 4, 1], ['Tobago Cays', 2026, 4, 4], ['Tyrrel Bay, Carriacou', 2026, 5, 3],
+    ['Prickly Bay, Grenada', 2026, 5, 17], ["St. George's, Grenada", 2026, 6, 5], ['Chaguaramas, Trinidad', 2026, 7, 2], ['Mount Hartman Bay, Grenada', 2026, 7, 7],
+    ['Gouyave, Grenada', 2026, 8, 1], ['Woburn Bay, Grenada', 2026, 8, 2],
+  ].map(([place, y, m, plays]) => ({place, first:at(y, m), last:at(y, m), plays}));
+}
 // in a desktop browser there's no Spotify or network: stand-ins that say what goes where
 function demoNotes(al){
   return {title:al.title || S.src.title, artist:al.artist || 'Various artists', date:'1988-06-14',
@@ -2413,6 +2636,52 @@ function updateLcd(now){
   const on = S.motor > .5;
   $$('#cover .lcd .eq i').forEach((b, i) => { const base = on ? .25 + .6 * Math.abs(Math.sin(now / (260 + i * 37) + i * 1.7)) * (1 - i / 26) + Math.random() * .15 : .08; b.style.height = Math.min(100, base * 100) + '%'; });
 }
+/* ---------- the pencil trick: open view only; stick it in a reel and wind ---------- */
+// the top reel is the take-up reel: winding it pulls the tape forward. The bottom one winds it back.
+const pencil = $('#pencil'), pwob = $('#pencil .pwob');
+let pen = null;
+function reelSpots(){
+  const o = wins.find(w => w.mode === 'deck'); if (!o || !o.canvas.width) return null;
+  const r = o.canvas.getBoundingClientRect(), host = $('#inner .deckfull').getBoundingClientRect();
+  const k = r.width / o.canvas.width, sc = o.scale * k, cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const at = h => ({x:cx + sc * (h.y - H / 2) - host.left, y:cy - sc * (h.x - W / 2) - host.top});
+  return {ff:at(HUB2), rew:at(HUB1), r:RMAX * sc, host};
+}
+function aimPencil(p, t){
+  const host = $('#inner .deckfull');
+  // from the hub toward the top-right corner, a little past it
+  const cx = host.clientWidth * 1.05, cy = -host.clientHeight * .12, ang = Math.atan2(cy - p.y, cx - p.x);
+  pencil.style.left = p.x + 'px'; pencil.style.top = p.y + 'px';
+  const wob = t == null ? 0 : Math.sin(t * 9) * .035, slide = t == null ? 70 : 0;
+  pwob.style.transform = `rotate(${ang + wob}rad) translateX(${slide}cqw)`;
+}
+function penDown(e){
+  if (!S.open || S.ejected || foldOpen || pen) return;
+  const sp = reelSpots(); if (!sp) return;
+  const x = e.clientX - sp.host.left, y = e.clientY - sp.host.top;
+  const which = Math.hypot(x - sp.ff.x, y - sp.ff.y) < sp.r ? 'ff' : Math.hypot(x - sp.rew.x, y - sp.rew.y) < sp.r ? 'rew' : null;
+  if (!which) return;
+  e.preventDefault(); ensureAudio();
+  pen = {which, id:e.pointerId, t0:performance.now()};
+  // it arrives from off-screen, then goes into the hub
+  pencil.style.transition = 'none'; pwob.style.transition = 'none'; aimPencil(sp[which]); void pencil.offsetWidth;
+  pencil.style.transition = ''; pwob.style.transition = ''; pencil.classList.add('on');
+  requestAnimationFrame(() => aimPencil(sp[which], 0));
+  sfx('tick'); try { N && N.haptic(1); } catch (err) {}
+  setTimeout(() => { if (pen && pen.which === which){ if (S.sideEnd || S.flipped){ if (which === 'ff') return; unEnd(); } S.cue = which === 'ff' ? 1 : -1; S.cueK = 5; pwob.style.transition = 'none'; spin(); } }, 200);
+}
+function spin(){ if (!pen) return; const sp = reelSpots(); if (sp) aimPencil(sp[pen.which], (performance.now() - pen.t0) / 1000); pen.raf = requestAnimationFrame(spin); }
+function penUp(e){
+  if (!pen || (e && e.pointerId !== pen.id)) return;
+  cancelAnimationFrame(pen.raf); const sp = reelSpots(), which = pen.which; pen = null;
+  if (S.cue){ S.cue = 0; S.cueK = 9; sfx('tick'); if (isRemote()) N.remoteCmd('seek', String(Math.round(S.t * 1000))); }
+  pwob.style.transition = ''; if (sp) aimPencil(sp[which]);
+  setTimeout(() => { if (!pen) pencil.classList.remove('on'); }, 200);
+}
+$('#inner .deck').addEventListener('pointerdown', penDown);
+addEventListener('pointerup', penUp); addEventListener('pointercancel', penUp);
+$('#inner .deck').style.touchAction = 'none';
+
 /* ---------- boot ---------- */
 applyFx(); setVol(N ? Math.max(0, N.getVolume()) : S.vol); renderJList(); tapeChanged(); layout();
 const saved = store.get('src', null);
