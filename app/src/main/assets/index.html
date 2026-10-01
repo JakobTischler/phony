@@ -16,43 +16,28 @@
 @font-face{font-family:"Caveat";font-weight:400 700;src:url(fonts/Caveat-Variable.ttf) format("truetype");font-display:block}
 @font-face{font-family:"Gochi Hand";src:url(fonts/GochiHand-Regular.ttf) format("truetype");font-display:block}
 
-/* Layout: product-photo backdrop. The Fold sits left at true proportions (closed 82×124 mm, open 161×124 mm); notes and tape shelf to the right, wrapping below when the phone is open. Single deliberate look. */
 :root{
-  --backdrop:#6d9a98; --backdrop-hi:#93bcb8; --backdrop-lo:#4c7978;
-  --ink:#0f2428; --ink-soft:#2b4a4f; --card:rgba(236,243,240,.78); --card-line:rgba(15,36,40,.14);
+  --ink:#0f2428;
   --anodized:#2b4d9e; --anodized-lo:#1d3576; --orange:#f5a01a; --led:#ff4a2e;
   --paper:#f3ecd9; --paper-lo:#e6dbc1; --pen:#1d3c8f; --rule:rgba(80,110,165,.28); --highlighter:rgba(255,228,70,.62);
   --f-brand:"Zilla Slab","Rockwell","Clarendon",Georgia,serif;
   --f-device:"Michroma","Eurostile","Arial Black",sans-serif;
   --f-hand:"Reenie Beanie","Bradley Hand","Comic Sans MS",cursive;
   --f-print:"Barlow Condensed","Arial Narrow",sans-serif;
-  --f-body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
   --lx:30%;--ly:25%;
   color-scheme:dark;
 }
 html,body{height:100%}
-[hidden]{display:none!important}
 body{margin:0;background:#000;color:var(--ink);font-family:var(--f-brand);font-size:15px;line-height:1.5;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
 button{-webkit-tap-highlight-color:transparent}
 #cover,#inner{position:fixed;inset:0;border-radius:0;animation:none}
-.stage{min-height:100%;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:36px 44px;align-items:flex-start;justify-content:center;padding-inline:20px;padding-block:24px}
-.devicecol{display:flex;flex-direction:column;align-items:center;gap:16px;flex:none;max-width:100%}
-
-/* fold toggle */
-.seg{display:inline-flex;padding:4px;border-radius:999px;background:rgba(15,36,40,.14);gap:2px}
-.seg button{font:inherit;font-weight:600;font-size:13px;letter-spacing:.02em;border:0;border-radius:999px;padding:7px 16px;background:none;color:var(--ink);cursor:pointer}
-.seg button[aria-pressed="true"]{background:#0f2428;color:#eef4f2}
-.seg button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
 
 /* ---------- phone ---------- */
-.phone{--lx:30%;--ly:25%;position:relative;width:min(calc(80vh * .661),470px,calc(100vw - 40px));aspect-ratio:819/1239;background:#0c0e10;border-radius:8.5%/5.6%;padding:1.8%;box-sizing:border-box;box-shadow:0 40px 60px -20px rgba(10,30,32,.55),0 12px 18px rgba(10,30,32,.25),inset 0 0 0 1.5px #2b3035,inset 0 0 0 3px #0a0b0c}
-.phone.open{width:min(calc(80vh * 1.3027),860px,calc(100vw - 40px));aspect-ratio:1614/1239;border-radius:4.4%/5.6%;padding:1.1%}
 .screen{position:relative;width:100%;height:100%;border-radius:7%/4.6%;overflow:hidden;container-type:size;background:#000;animation:fadein .35s ease}
 .inner{position:relative;width:100%;height:100%;border-radius:3.6%/4.7%;overflow:hidden;display:flex;background:#000;animation:fadein .35s ease}
 .inner::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:14px;margin-left:-7px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(0,0,0,.18) 40%,rgba(255,255,255,.06) 55%,transparent);z-index:30}
 @keyframes fadein{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
 .half{position:relative;flex:1;min-width:0;container-type:size;overflow:hidden}
-.punch{position:absolute;top:1.8cqw;left:50%;width:3.4cqw;height:3.4cqw;margin-left:-1.7cqw;border-radius:50%;background:#050506;box-shadow:0 0 0 .5cqw rgba(0,0,0,.4);z-index:20}
 .walkman{position:absolute;inset:0;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 
 .brushed{background-image:
@@ -71,11 +56,7 @@ button{-webkit-tap-highlight-color:transparent}
 .jacks{display:flex;gap:3.2cqw;align-items:flex-end}
 .jack{display:flex;flex-direction:column;align-items:center;gap:.8cqw;font-family:var(--f-device);font-size:1.7cqw;color:rgba(222,230,244,.75)}
 .jack i{display:block;width:4.6cqw;height:4.6cqw;border-radius:50%;background:radial-gradient(circle,#050608 36%,#3b3f46 38%,#c9a960 44%,#8a6d2f 60%,#1a1c20 64%)}
-.brand{position:absolute;left:6.6cqw;top:9.4cqw;font-family:var(--f-brand);font-weight:700;font-size:8cqw;line-height:1;letter-spacing:.07em;color:#eef2f8;text-shadow:0 -1px 0 rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.12)}
 .model{position:absolute;left:7cqw;top:12.2cqw;font-family:var(--f-device);font-size:2.05cqw;letter-spacing:.2em;color:rgba(222,230,244,.72)}
-.top.slim{height:21cqw}
-.top.slim .brand{top:10.6cqw;font-size:7cqw}
-.top.slim .model{top:auto;bottom:3.2cqw;left:auto;right:6cqw;font-size:1.8cqw}
 
 .body{flex:1;display:flex;min-height:0}
 .face{position:relative;flex:1;background-color:var(--anodized);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.6cqw;overflow:hidden}
@@ -114,21 +95,9 @@ button{-webkit-tap-highlight-color:transparent}
 .track{position:relative;width:6cqw;border-radius:3cqw;background:linear-gradient(90deg,#3a3f45,#1c1f23);box-shadow:inset 0 .4cqw .6cqw rgba(0,0,0,.6);cursor:ns-resize;touch-action:none}
 .thumb{position:absolute;left:-1.4cqw;right:-1.4cqw;height:5.6cqw;margin-top:-2.8cqw;border-radius:1cqw;background:repeating-linear-gradient(0deg,#6d7379 0 .45cqw,#e4e7e9 .45cqw .9cqw);box-shadow:0 .6cqw .8cqw rgba(0,0,0,.4)}
 
-/* in-screen tape picker (closed view) */
-.picker{position:absolute;inset:0;z-index:5;background:rgba(14,26,62,.93);display:flex;flex-direction:column;padding:6cqw 4.5cqw;box-sizing:border-box;gap:3.5cqw;overflow-y:auto;opacity:0;transform:translateY(3cqw);transition:opacity .25s,transform .25s}
-.picker.show{opacity:1;transform:none}
-.picker h3{margin:0;font-family:var(--f-device);font-weight:400;font-size:2.6cqw;letter-spacing:.24em;color:#e6ecf7}
-.picker .grid{display:grid;grid-template-columns:1fr 1fr;gap:3.4cqw}
-.picker button{display:flex;flex-direction:column;gap:1.2cqw;align-items:flex-start;background:none;border:0;padding:0;cursor:pointer;color:#e6ecf7;text-align:left}
-.picker canvas{width:100%;height:auto;aspect-ratio:1000/638;border-radius:1.2cqw;box-shadow:0 1cqw 2cqw rgba(0,0,0,.5)}
-.picker b{font-family:var(--f-device);font-weight:400;font-size:2.1cqw;letter-spacing:.12em}
-.picker button:focus-visible{outline:.6cqw solid #ffd26a;outline-offset:.6cqw;border-radius:1cqw}
-
 /* ---------- open view: deck (right half) ---------- */
 .deck{position:relative;flex:1;background:#1c1e22;overflow:hidden}
 .deck::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(70cqw 90cqw at var(--lx) var(--ly),rgba(255,255,255,.09),transparent 70%)}
-.deckfoot{position:absolute;left:0;right:0;bottom:3cqw;display:flex;justify-content:center;gap:5cqw;align-items:center;z-index:2}
-.deckfoot .engrave{color:rgba(214,220,230,.6)}
 
 /* ---------- open view: cassette bay (right half) ---------- */
 .deckfull{position:absolute;inset:0;background-color:var(--anodized);padding:2.4cqw 2.4cqw 2.4cqw 1.4cqw;box-sizing:border-box}
@@ -142,7 +111,6 @@ button{-webkit-tap-highlight-color:transparent}
 .kb-fx{display:flex;flex-direction:column;align-items:flex-start;gap:1.8cqw}
 .kb-leds{display:flex;align-items:center;gap:1cqw}
 .kb-leds .led{margin-left:.6cqw}
-.kb-brand{font-family:var(--f-brand);font-weight:700;font-size:3.6cqw;letter-spacing:.08em;color:#3a3f45;text-shadow:0 1px 0 rgba(255,255,255,.6)}
 
 /* ---------- open view: J-card (left half) ---------- */
 .lid{position:absolute;inset:0;background-color:var(--anodized-lo);display:flex;flex-direction:column;gap:3cqw;padding:4.2cqw;box-sizing:border-box}
@@ -187,39 +155,8 @@ button{-webkit-tap-highlight-color:transparent}
 .jcard.printed .spine{height:34cqw}
 .jcard.printed .stripes,.jcard.printed .spine .meta{display:none}
 .jcard.printed .albumart{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
-.shelfstrip{flex:none;display:flex;gap:3cqw;overflow-x:auto;padding:3cqw 5cqw 3.4cqw;background:rgba(40,34,22,.08);border-top:.3cqw solid rgba(60,50,30,.18);scrollbar-width:thin;transition:background .3s}
-.shelfstrip.ask{background:rgba(245,160,26,.28);animation:ask 1.2s ease-in-out infinite}
-@keyframes ask{50%{background:rgba(245,160,26,.12)}}
-.shelfstrip button{flex:none;width:24cqw;border:0;padding:0;background:none;cursor:pointer;display:flex;flex-direction:column;gap:1cqw;align-items:flex-start}
-.shelfstrip canvas{width:100%;height:auto;aspect-ratio:1000/638;border-radius:.8cqw;box-shadow:0 .8cqw 1.4cqw rgba(0,0,0,.35)}
-.shelfstrip b{font-family:var(--f-print);font-weight:600;font-size:2.6cqw;letter-spacing:.06em;color:#4d4433;white-space:nowrap}
-.shelfstrip button.on canvas{box-shadow:0 0 0 .6cqw var(--anodized),0 .8cqw 1.4cqw rgba(0,0,0,.35)}
-.shelfstrip button:focus-visible{outline:.5cqw solid var(--orange);outline-offset:.5cqw}
 
-/* ---------- notes column ---------- */
-.notes{flex:1 1 320px;max-width:460px;min-width:0;display:flex;flex-direction:column;gap:22px}
-.eyebrow{font-family:var(--f-device);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
-h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34px,5vw,50px);letter-spacing:.07em;line-height:1.05}
-.lede{margin:10px 0 0;max-width:60ch;color:var(--ink-soft)}
-.card{background:var(--card);border:1px solid var(--card-line);border-radius:14px;padding:16px 18px;backdrop-filter:blur(6px)}
-.card h2{margin:0 0 10px;font-family:var(--f-device);font-weight:400;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
-.howto{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}
-.howto dt{font-family:Arial,sans-serif;font-weight:700;white-space:nowrap}
-.howto dd{margin:0;color:var(--ink-soft)}
-.howto dt.orange{color:#b86b00;font-family:var(--f-body);font-size:13px}
-.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:14px}
-.shelf button{display:flex;flex-direction:column;gap:6px;border:0;padding:0;background:none;cursor:pointer;text-align:left;color:var(--ink);font:inherit}
-.shelf canvas{width:100%;height:auto;aspect-ratio:1000/638;border-radius:6px;box-shadow:0 6px 12px -4px rgba(10,30,32,.45);transition:transform .15s}
-.shelf button:hover canvas{transform:translateY(-2px) rotate(-1deg)}
-.shelf button.on canvas{box-shadow:0 0 0 2.5px var(--anodized),0 6px 12px -4px rgba(10,30,32,.45)}
-.shelf b{font-size:13px;font-weight:600;line-height:1.2}
-.shelf small{display:block;font-size:12px;color:var(--ink-soft)}
-.shelf button:focus-visible{outline:2px solid var(--anodized);outline-offset:3px;border-radius:6px}
-.load{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
-.btn{font:inherit;font-weight:600;font-size:14px;border:0;border-radius:999px;padding:9px 16px;background:var(--ink);color:#eef4f2;cursor:pointer}
-.btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
-.fine{font-size:13px;color:var(--ink-soft);margin:0}
-@media (prefers-reduced-motion:reduce){.picker,.screen,.inner{transition:none;animation:none}.shelfstrip.ask{animation:none}}
+@media (prefers-reduced-motion:reduce){.screen,.inner{transition:none;animation:none}}
 
 /* ---------- music chooser ---------- */
 .spine{border:0;padding:0;margin:0;background:none;text-align:left;cursor:pointer;color:inherit;font:inherit;width:100%}
@@ -386,7 +323,6 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .pstamp{position:absolute;right:6cqw;top:6cqw;z-index:6;width:30cqw;height:30cqw;border-radius:50%;border:.8cqw double currentColor;color:rgba(170,40,40,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transform:rotate(-14deg);font-family:var(--f-print);font-weight:800;letter-spacing:.1em;mix-blend-mode:multiply;
   -webkit-mask:radial-gradient(circle at 30% 40%,#000 60%,rgba(0,0,0,.55) 61% 64%,#000 66%),linear-gradient(#000,#000);-webkit-mask-composite:source-in}
 .pstamp b{font-size:3.4cqw;line-height:1.05}.pstamp small{font-size:2.3cqw;font-weight:600;margin-top:.8cqw}
-.pmore{font-family:var(--f-hand);font-size:5cqw;color:#8a7a5c;transform:rotate(-1.5deg);margin-top:2cqw}
 .ftr.on .t{background:var(--highlighter);border-radius:.6cqw .2cqw .8cqw .3cqw;box-shadow:0 0 0 .6cqw var(--highlighter)}
 .fcred{margin-top:5cqw;font-family:var(--f-print);font-weight:600;font-size:3cqw;line-height:1.45;letter-spacing:.04em;color:#6f6250}
 .fgen{display:flex;flex-wrap:wrap;gap:1.4cqw;margin:0 0 3cqw}
@@ -1247,7 +1183,7 @@ function ensureAudio(){
   windBP = ac.createBiquadFilter(); windBP.type = 'bandpass'; windBP.Q.value = 3; windBP.frequency.value = 900;
   windGain = ac.createGain(); windGain.gain.value = 0; loop().connect(windBP).connect(windGain).connect(sfxBus);
   lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = S.fx ? 11000 : 20000;
-  try { ac.createMediaElementSource(audio).connect(lp).connect(master); } catch (e) {}
+  try { ac.createMediaElementSource(audio).connect(lp).connect(master); audio._wired = true; } catch (e) {}
 }
 function sfx(type){
   if (!ac) return; const t = ac.currentTime + .005;
@@ -1794,6 +1730,7 @@ addEventListener('resize', layout);
 
 /* ---------- main loop ---------- */
 let last = performance.now(), rateTick = 0, timeTick = 0, cueSeekAt = 0;
+const runLeds = $$('.runled');
 function loop(now){
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   S.ej += ((S.ejected ? 1 : 0) - S.ej) * Math.min(1, dt * 9);
@@ -1844,7 +1781,7 @@ function loop(now){
     else if (S.src.kind === 'files') audio.playbackRate = rate;
   }
   if (S.src.kind === 'files') audio.volume = S.cue ? .35 : 1;
-  $$('.runled').forEach(l => l.classList.toggle('on', S.motor > .5));
+  runLeds.forEach(l => l.classList.toggle('on', S.motor > .5));
   face.classList.toggle('spinning', S.motor > .5); updateLcd(now);
   if (S.open){
     updateCounter();
@@ -1889,7 +1826,7 @@ function sortCases(list){
   return list.sort((a, b) => yearOf(a) - yearOf(b) || byArtist(a.artist).localeCompare(byArtist(b.artist), undefined, {sensitivity:'base'}) || (a.title || '').localeCompare(b.title || '', undefined, {sensitivity:'base'}));
 }
 let CASES = N ? [] : sortCases(DEMO_CASES.slice());
-/* ---------- the drawer: the twelve playlists played most recently ---------- */
+/* ---------- the drawer: the twenty playlists played most recently ---------- */
 const DRAWER = 20;
 // In the app these come from Spotify. In this mockup they're invented.
 const DEMO_PLAYLISTS = ['anchor watch', 'Deck Scrub Sunday', 'night passage', 'BANGERS (do not share)', 'rainy harbour', 'writing — no words', 'kitchen dancing', '90s alt forever', 'Carnival warm-up', 'slow boat', 'songs my dad played', 'car karaoke!!', 'Tuesday', 'Rap', 'soca 2026', 'sunday morning coffee', 'long watch (3am)', 'road trip', 'Motown', 'for Shay', 'gym, ugh', 'Outkast only']
@@ -1914,7 +1851,7 @@ function assignLook(id, used){
   store.set('plLooks', LOOKS);
 }
 function assignLooks(){
-  // the drawer's twelve on as many different shells as there are
+  // the drawer's twenty on as many different shells as there are
   const used = new Set(PLAYLISTS.map(p => LOOKS[p.id] && LOOKS[p.id].d).filter(v => v != null));
   PLAYLISTS.forEach(p => { if (!LOOKS[p.id]) assignLook(p.id, used); });
 }

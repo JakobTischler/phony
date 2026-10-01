@@ -334,7 +334,7 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun boxSync(force: Boolean) = box.sync(force)
         @JavascriptInterface fun getBox(): String = box.boxJson()
         @JavascriptInterface fun getCover(id: String): String = box.coverDataUrl(id)
-        /** The drawer: up to twelve playlists, most recently played first. */
+        /** The drawer: up to twenty playlists, most recently played first. */
         @JavascriptInterface fun getDrawer(): String = box.drawerJson()
         /** What Spotify says it's playing: {type: "album"|"playlist"|…, uri, album, albumUri}, or "". */
         @JavascriptInterface fun spotifyContext(): String = box.contextJson

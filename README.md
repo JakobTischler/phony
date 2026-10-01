@@ -26,7 +26,7 @@ The first time, tap the note in the box to sign in to Spotify (once, in the brow
 
 Under the boxes is a drawer of playlist tapes: your twenty most recently played Spotify playlists, tossed in loose. Press and hold a tape to pick it up and drag it where you want it; the drawer keeps your order, and a playlist new to the drawer lands on top. Each playlist gets its own shell (fifteen designs, after real 80s and 90s tapes) and its name written on the label in a pen of its own: ballpoint, Sharpie, felt tip, pencil, gel, or paint pen on the dark shells. The shell and pen stay with the playlist. Tap one and Spotify plays it. Start a playlist in Spotify itself and its tape goes into the player.
 
-"Recently played" comes from Spotify's recent history plus every playlist PHONY sees playing; if that's fewer than twelve, the rest are your playlists in Spotify's order. The drawer needs one more Spotify sign-in to read playlists (tap the note in the drawer).
+"Recently played" comes from Spotify's recent history plus every playlist PHONY sees playing; if that's fewer than twenty, the rest are your playlists in Spotify's order. The drawer needs one more Spotify sign-in to read playlists (tap the note in the drawer).
 
 ## The radio and the blank tape
 

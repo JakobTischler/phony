@@ -273,7 +273,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     /**
      * Twenty playlists. First the ones played lately (Spotify's recently-played list,
      * plus every playlist PHONY has seen Spotify playing), newest first; then, if there
-     * aren't twelve yet, the rest of your playlists in the order Spotify lists them.
+     * aren't twenty yet, the rest of your playlists in the order Spotify lists them.
      */
     private fun syncDrawer() {
         if (!canPlaylists) return
