@@ -332,7 +332,7 @@ h1{margin:4px 0 0;font-family:var(--f-brand);font-weight:700;font-size:clamp(34p
 .fold{touch-action:pan-y}
 .foldscroll{position:absolute;inset:0;overflow:hidden;display:flex;align-items:center}
 .foldscroll::-webkit-scrollbar{display:none}
-.foldstrip{display:flex;align-items:center;padding-inline:calc((100vw - 2.2 * var(--pw)) / 2);perspective:260vw}
+.foldstrip{display:flex;align-items:center;padding-left:calc((100vw - 2.2 * var(--pw)) / 2);padding-right:calc(50vw - var(--pw) * .25);perspective:260vw}
 .fp{--i:0;position:relative;flex:none;width:var(--pw);height:var(--ph);max-height:92vh;container-type:size;overflow:hidden;scroll-snap-align:start;color:#2a241a;
   background:linear-gradient(180deg,#f6efdf,#ebe0c6);transform-origin:0 50%;
   transform:translateX(calc(var(--i) * -100%)) rotateY(calc(var(--f,1) * 88deg));opacity:0;
@@ -2556,13 +2556,22 @@ function mergePorts(list){
     list[j].plays += list[i].plays; list[j].last = Math.max(list[j].last, list[i].last); list.splice(i, 1); break; }
 }
 // an album counts as played somewhere once a song has played 30 seconds; again there after six hours
-let portAlbum = '', portDone = false, portT = 0;
+// a place earns its line (or a tally mark) only once you've really played the tape there:
+// three of its songs heard through, without winding forward past them
+const PORT_SONGS = 3;
+let portAlbum = '', portDone = false, portT = 0, portHeard = new Set(), portSong = '', portSkipped = false;
 function notePort(now){
-  if (!N || now - portT < 2000) return; portT = now;
+  if (S.cue > 0) portSkipped = true;
+  if (now - portT < 1000) return; portT = now;
   if (!S.playing || (!S.mix && (!S.albumMode || !ALBUM.title))) return;
   const key = S.mix ? 'mix:' + S.mix.id : albumKey({title:ALBUM.title, artist:ALBUM.artist || (S.tracks[S.idx] || {}).artist || ''});
-  if (key !== portAlbum){ portAlbum = key; portDone = false; }
-  if (portDone || S.t < 30 || !N.hasLocation()) return;
+  if (key !== portAlbum){ portAlbum = key; portDone = false; portHeard = new Set(); portSong = ''; }
+  const tr = S.tracks[S.idx] || {}, song = plainSong(tr.title);
+  if (song !== portSong){ portSong = song; portSkipped = false; }
+  const d = dur(S.idx);
+  if (song && !portSkipped && d > 20 && S.t >= Math.min(d * .9, d - 8)) portHeard.add(song);
+  const need = Math.min(PORT_SONGS, Math.max(1, S.mix ? S.mix.songs.length : S.tracks.length));
+  if (portDone || portHeard.size < need || !N || !N.hasLocation()) return;
   let here = null; try { here = JSON.parse(N.whereAmI() || 'null'); } catch (e) {}
   if (!here) return;
   portDone = true;
@@ -2740,7 +2749,8 @@ function drawPencil(c, P, L, T, phi, clip){
   const R = T / 2, cy = T * .6, gLen = T * .55, coneEnd = T * 2.3, r = rng(P.id.length * 41);
   c.clearRect(0, 0, c.canvas.width, c.canvas.height);
   c.save();
-  if (clip > 0){ c.beginPath(); c.rect(clip, 0, c.canvas.width, c.canvas.height); c.clip(); }
+  // in the reel: you see the pencil on your side of the hub's centre, and past it only what's inside the round hole
+  if (clip){ c.beginPath(); c.rect(clip.x, -T, c.canvas.width, T * 4); c.arc(clip.x, cy, clip.r, 0, TAU); c.clip(); }
   // the ferrule and eraser (or a dipped cap, or a cut end) take up the back
   const erW = P.eraser ? T * P.erLen * 1.6 : 0, feW = P.ferrule ? T * .62 : 0, bodyEnd = L - erW - feW;
   const capStart = P.cap ? bodyEnd - T * P.capLen * 1.6 : bodyEnd;
@@ -2796,7 +2806,7 @@ function drawPencil(c, P, L, T, phi, clip){
     const a0 = phi + k * Math.PI / 3 - Math.PI / 6, a1 = a0 + Math.PI / 3, mid = a0 + Math.PI / 6, nz = Math.cos(mid);
     if (nz <= 0) continue;
     const y0 = cy - R * Math.sin(a0), y1 = cy - R * Math.sin(a1);
-    c.fillStyle = wood; c.beginPath(); c.moveTo(coneEnd - 1, y0); c.quadraticCurveTo(coneEnd + T * .42 * nz, (y0 + y1) / 2, coneEnd - 1, y1); c.fill();
+    c.fillStyle = wood; c.beginPath(); c.moveTo(coneEnd - 1, y0); c.quadraticCurveTo(coneEnd + T * .2 * nz, (y0 + y1) / 2, coneEnd - 1, y1); c.fill();
   }
   const lead = c.createLinearGradient(0, cy - T * .12, 0, cy + T * .12); lead.addColorStop(0, '#77777e'); lead.addColorStop(1, '#2c2c31');
   c.fillStyle = lead; c.beginPath(); c.moveTo(0, cy); c.lineTo(gLen, cy - T * .11); c.lineTo(gLen, cy + T * .11); c.fill();
@@ -2818,7 +2828,13 @@ function drawPencil(c, P, L, T, phi, clip){
     c.fillStyle = '#c99a62'; c.fillRect(bodyEnd - 2, cy - R, 3, T);
   }
   // where it goes into the reel, the hub's shadow falls on it
-  if (clip > 0){ const s = c.createLinearGradient(clip, 0, clip + T * .7, 0); s.addColorStop(0, 'rgba(0,0,0,.65)'); s.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = s; c.fillRect(clip, 0, T * .7, cy * 2); }
+  // down in the hole it's dark, darker the deeper it goes; the rim throws a soft shadow across it
+  if (clip){
+    c.save(); c.beginPath(); c.arc(clip.x, cy, clip.r, 0, TAU); c.clip();
+    const s = c.createLinearGradient(clip.x + clip.r, 0, clip.x - clip.r, 0);
+    s.addColorStop(0, 'rgba(0,0,0,0)'); s.addColorStop(.35, 'rgba(0,0,0,.35)'); s.addColorStop(1, 'rgba(0,0,0,.8)');
+    c.fillStyle = s; c.fillRect(clip.x - clip.r, 0, clip.r * 2, cy * 2); c.restore();
+  }
   c.restore();
 }
 
@@ -2833,7 +2849,7 @@ function penCanvas(cv, P, halfW, thick){
 }
 function redrawPen(){
   if (!pen) return; const g = pen.geo, c = pcv.getContext('2d'); c.setTransform(g.d, 0, 0, g.d, 0, 0);
-  drawPencil(c, pen.P, g.L, g.T, pen.phi, pen.inserted ? g.anchor - pen.holeR * .92 : 0);
+  drawPencil(c, pen.P, g.L, g.T, pen.phi, pen.inserted ? {x:g.anchor, r:pen.holeR * .96} : null);
 }
 function reelSpots(){
   const o = wins.find(w => w.mode === 'deck'); if (!o || !o.canvas.width) return null;
@@ -2861,7 +2877,7 @@ function penDown(e){
   const halfW = $('#inner .deckfull').parentElement.clientWidth;
   pen = {which, id:e.pointerId, t0:performance.now(), P:PENCILS[pi], phi:Math.random() * TAU, inserted:false, holeR:sp.hole, last:performance.now()};
   // it goes in past the sharpened end, so the six sides of the body grip the teeth of the reel
-  pen.geo = penCanvas(pcv, pen.P, halfW, halfW * .066); pen.geo.anchor = pen.geo.T * 2.3 + sp.hole * .85;
+  pen.geo = penCanvas(pcv, pen.P, halfW, halfW * .066); pen.geo.anchor = pen.geo.T * 2.3 + sp.hole * 1.05;
   pcv.style.marginLeft = (-pen.geo.anchor) + 'px'; pcv.dataset.p = pen.P.id;
   redrawPen();
   setTimeout(() => { if (pen && pen.which === which){ pen.inserted = true; redrawPen(); } }, 230);
@@ -3162,7 +3178,7 @@ function openNamer(m){
   const ncv = document.createElement('canvas'); nw.append(ncv);
   requestAnimationFrame(() => { const w = v.clientWidth, P = [PENCILS[0], PENCILS[1], PENCILS[5]][Math.floor(Math.random() * 3)], len = w * .7 / P.len;
     const g = penCanvas(ncv, P, len, w * .026); v.style.setProperty('--plen', (g.L - w * .04) + 'px');
-    const c = ncv.getContext('2d'); c.setTransform(g.d, 0, 0, g.d, 0, 0); drawPencil(c, P, g.L, g.T, .35, 0); });
+    const c = ncv.getContext('2d'); c.setTransform(g.d, 0, 0, g.d, 0, 0); drawPencil(c, P, g.L, g.T, .35, null); });
   const strokes = []; let cur = null;
   const fitCanvas = () => { const r = strip.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); cv.width = r.width * d; cv.height = r.height * d; draw(); };
   const draw = () => { const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); drawStrokes(c, strokes, 0, 0, cv.width, cv.height, '#3a3a40', cv.height * .032); };
@@ -3317,6 +3333,17 @@ function buildMixFold(m){
   foldScroll.scrollLeft = keep;
   renderWords();
 }
+
+/* ---------- changed your mind: tap the player and the same tape goes back in ---------- */
+function putBack(e){
+  if (!S.ejected || !boxVisible() || $('.caseview') || $('.namer')) return;
+  if (e){ e.preventDefault(); e.stopPropagation(); }
+  ensureAudio(); sfx('key'); insert(S.tape);
+}
+// closed: the strip of player still showing above the box (capture, so its keys and wheel don't also act)
+['pointerdown', 'click'].forEach(ev => $('#cover .walkman').addEventListener(ev, e => { if ($('#cover').classList.contains('boxopen') && S.ejected){ if (ev === 'click') putBack(e); else { e.preventDefault(); e.stopPropagation(); } } }, true));
+// open: the empty cassette bay
+$('#inner .deck').addEventListener('click', e => { if (S.ejected) putBack(e); });
 
 /* ---------- boot ---------- */
 applyFx(); setVol(N ? Math.max(0, N.getVolume()) : S.vol); renderJList(); tapeChanged(); layout();

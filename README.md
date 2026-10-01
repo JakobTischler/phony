@@ -48,9 +48,13 @@ Open, touch a reel and a pencil comes in from the corner, pushes into the hub un
 
 ## The J-card
 
-Tap the song title and artist on the J-card (open view) and the album's J-card unfolds across the screen: the cover, the spine, both sides of the tape with running times and credits, the words to the song that's playing (they light up line by line as it plays), liner notes about the album, the band with a photo, and last, the ports of call: everywhere the album has played, one line per place, with a tally mark for each time after the first (and a stamp on the front for where it first played). That page asks for approximate location once; out of signal, a place is noted by position and named later. Swipe anywhere on the card to unfold further; at the far end the card sits on the left and the tape plays beside it. Tap a song to play it, or tap a line of the words to jump to it. **FOLD IT UP** or tap outside to put it back.
+Tap the song title and artist on the J-card (open view) and the album's J-card unfolds across the screen: the cover, the spine, both sides of the tape with running times and credits, the words to the song that's playing (they light up line by line as it plays), liner notes about the album, the band with a photo, and last, the ports of call: everywhere the album has really been played (three of its songs heard through in that place), one line per place, with a tally mark for each time after the first (and a stamp on the front for where it first played). That page asks for approximate location once; out of signal, a place is noted by position and named later. Swipe anywhere on the card to unfold further; at the far end the card sits on the left and the tape plays beside it. Tap a song to play it, or tap a line of the words to jump to it. **FOLD IT UP** or tap outside to put it back.
 
 Album details and the band photo come from Spotify, the liner notes and band story from Wikipedia, the words from LRCLIB (lrclib.net, an open lyrics library). Not every song or album has all of them; the card leaves out what it can't find. Everything found is saved on the phone, so a card opens again with no signal. On Wi-Fi, PHONY also works through every album in the tape box in the background, so their J-cards (and the words to every song on them) are ready offline. The music itself still comes from Spotify: to play offline, download the album or playlist in the Spotify app.
+
+## The rule
+
+PHONY doesn't hold your hand. No menus, no hints, no "tap here" labels: things are there for whoever fiddles with it and finds them, the way it was out on the street with a skateboard, a Walkman and your friends. New features follow that.
 
 ## How it's built
 
