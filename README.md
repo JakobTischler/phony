@@ -58,7 +58,12 @@ PHONY doesn't hold your hand. No menus, no hints, no "tap here" labels: things a
 
 ## How it's built
 
-- `app/src/main/assets/index.html` – the whole player: drawing, keys, sounds, J-card. Opens in a desktop browser too (uses a silent sample mix).
+- `app/src/main/assets/` – the whole player is a web page. Opens in a desktop browser too (uses a silent sample mix).
+  - `index.html` – the markup; `phony.css` – the looks, including every shell.
+  - `js/tapes.js` – the cassettes: shells, labels, pens, and how a tape is drawn.
+  - `js/player.js` – the player: state, transport, keys, the window and bay, the J-card list, the phone bridge, the main loop.
+  - `js/box.js` – the tape box and the drawer. `js/jcard.js` – the fold-out J-card. `js/skins.js` – the shells and the pencil trick. `js/mixtape.js` – the radio and the blank tape. `js/boot.js` – start-up.
+  - The scripts share one scope and load in that order; a later file may use anything an earlier one defines.
 - `MainActivity.kt` – shows the page full screen and bridges it to the phone.
 - `PlaybackService.kt` – plays saved songs in the background (Media3), with lock-screen controls.
 - `Library.kt` – reads songs and album art from Android's media library.
