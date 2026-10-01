@@ -15,6 +15,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The tape box: the albums saved in your Spotify library, each with its cover,
@@ -45,7 +46,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
 
     @Volatile var state = "idle"; private set      // idle · loading · ready · error
     @Volatile var message = ""; private set
-    @Volatile private var syncing = false
+    private val syncing = AtomicBoolean(false)
     @Volatile private var access: String? = null
     @Volatile private var accessUntil = 0L
     private var remote: SpotifyAppRemote? = null
@@ -53,10 +54,17 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     val signedIn get() = prefs.getString("refresh", null) != null
     /** Signed in with permission to change what Spotify plays (added after the first version). */
     val canPlay get() = signedIn && (prefs.getString("scope", "") ?: "").contains(PLAY_SCOPE)
-    /** Signed in with permission to read playlists and what played lately (added with the playlist drawer). */
     /** Signed in with permission to make the mixtape playlists (added with the blank tape). */
     val canMix get() = signedIn && (prefs.getString("scope", "") ?: "").contains(MIX_SCOPE)
+    /** Signed in with permission to read playlists and what played lately (added with the playlist drawer). */
     val canPlaylists get() = signedIn && LIST_SCOPES.split(" ").all { (prefs.getString("scope", "") ?: "").contains(it) }
+
+    /** The page may be reading a file while it's rewritten: write beside it, then swap, so it never sees half a file. */
+    private fun File.writeWhole(text: String) {
+        val tmp = File(parentFile, "$name.tmp")
+        tmp.writeText(text)
+        if (!tmp.renameTo(this)) { writeText(text); tmp.delete() }
+    }
 
     fun statusJson(): String = JSONObject()
         .put("signedIn", signedIn)
@@ -169,14 +177,13 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
 
     /** Refresh the box in the background, unless it was refreshed in the last minute. */
     fun sync(force: Boolean) {
-        if (!signedIn || syncing) return
+        if (!signedIn || syncing.get()) return
         if (!force && boxFile.exists() && System.currentTimeMillis() - boxFile.lastModified() < 60_000) return
         Thread { syncNow() }.start()
     }
 
     private fun syncNow() {
-        if (syncing) return
-        syncing = true
+        if (!syncing.compareAndSet(false, true)) return
         if (!boxFile.exists()) { state = "loading"; onChange() }
         try {
             val out = JSONArray()
@@ -210,7 +217,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
                 }
                 next = j.optString("next").takeIf { it.isNotEmpty() && it != "null" }
             }
-            boxFile.writeText(out.toString())
+            boxFile.writeWhole(out.toString())
             state = "ready"; message = ""
             onChange()
             try { syncDrawer() } catch (e: Exception) { }
@@ -228,7 +235,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             state = if (boxFile.exists()) "ready" else "error"
             message = if (!signedIn) "Sign in to Spotify again." else "Couldn't reach Spotify."
             onChange()
-        } finally { syncing = false }
+        } finally { syncing.set(false) }
     }
 
     private fun pickImage(imgs: JSONArray?): String {
@@ -310,7 +317,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         val order = (recent + lib.map { it.getString("uri") }).distinct().take(DRAWER)
         val out = JSONArray()
         order.forEach { u -> out.put(known[u]!!.put("played", played[u] ?: 0L)) }
-        drawerFile.writeText(out.toString())
+        drawerFile.writeWhole(out.toString())
         onChange()
     }
 
@@ -338,10 +345,10 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         val list = try { JSONArray(drawerJson()) } catch (e: Exception) { JSONArray() }
         val items = (0 until list.length()).map { list.getJSONObject(it) }
         val hit = items.firstOrNull { it.optString("uri") == uri }
-        if (hit == null) { if (canPlaylists && !syncing) Thread { try { syncDrawer() } catch (e: Exception) { } }.start(); return }
+        if (hit == null) { if (canPlaylists && !syncing.get()) Thread { try { syncDrawer() } catch (e: Exception) { } }.start(); return }
         if (items.first() === hit) return
         val out = JSONArray(); out.put(hit.put("played", now)); items.filter { it !== hit }.forEach { out.put(it) }
-        drawerFile.writeText(out.toString())
+        drawerFile.writeWhole(out.toString())
         onChange()
     }
 

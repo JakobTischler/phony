@@ -267,7 +267,10 @@ class LinerNotes(private val ctx: Context, private val box: SpotifyBox, private 
     private fun file(kind: String, key: String) = File(dir, kind + "-" + sha1(key) + ".json")
     private fun has(kind: String, key: String) = file(kind, key).exists()
     private fun read(kind: String, key: String): String? = file(kind, key).takeIf { it.exists() }?.let { try { it.readText() } catch (e: Exception) { null } }
-    private fun write(kind: String, key: String, s: String) { try { file(kind, key).writeText(s) } catch (e: Exception) { } }
+    // written beside and swapped in, so a card being read on another thread is never half there
+    private fun write(kind: String, key: String, s: String) {
+        try { val f = file(kind, key); val tmp = File(dir, f.name + ".tmp"); tmp.writeText(s); if (!tmp.renameTo(f)) { f.writeText(s); tmp.delete() } } catch (e: Exception) { }
+    }
 
     private fun saveImage(u: String): String? {
         val name = sha1(u) + ".jpg"

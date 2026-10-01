@@ -139,8 +139,6 @@ class MainActivity : ComponentActivity() {
         future.addListener({
             controller = try { future.get() } catch (e: Exception) { null }
         }, ContextCompat.getMainExecutor(this))
-
-        main.post(tick)
     }
 
     /**
@@ -173,6 +171,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // the 20-a-second poll of the player and the other app runs only while PHONY is on screen
+        main.removeCallbacks(tick)
+        main.post(tick)
         library.invalidate()
         refreshPage()
         box.sync(false)
@@ -182,6 +183,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        main.removeCallbacks(tick)
         box.watch(false)
         super.onPause()
     }

@@ -28,8 +28,9 @@
         </intent>
     </queries>
 
+    <!-- no cloud backup: the Spotify sign-in key stays on this phone -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:label="PHONY"

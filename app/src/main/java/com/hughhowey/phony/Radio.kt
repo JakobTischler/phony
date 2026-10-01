@@ -24,8 +24,9 @@ class Radio private constructor(private val ctx: Context) {
     private val file = File(ctx.filesDir, "radio.json")
     private val seenFile = File(ctx.filesDir, "radio-seen.json")
     var box: SpotifyBox? = null
-    // the listener can run with PHONY closed, so it keeps its own way to ask where you are
-    var places: Places? = Places(ctx)
+    // the listener can run with PHONY closed, so without the app's Places it makes its own
+    var places: Places? = null
+    private val ownPlaces by lazy { Places(ctx) }
     var onChange: (() -> Unit)? = null
     /** A line for the page to show the next time it's open: what was just caught. */
     @Volatile var notice = ""; private set
@@ -55,7 +56,7 @@ class Radio private constructor(private val ctx: Context) {
             seenFile.writeText(seen.toString())
             val o = JSONObject().put("key", key).put("title", t).put("artist", a).put("how", how).put("at", System.currentTimeMillis())
                 .put("uri", uri).put("dur", dur).put("album", album)
-            try { places?.here()?.takeIf { it.isNotEmpty() }?.let { JSONObject(it) }?.let { h -> o.put("lat", h.optDouble("lat")).put("lon", h.optDouble("lon")).put("place", h.optString("place")) } } catch (e: Exception) { }
+            try { (places ?: ownPlaces).here().takeIf { it.isNotEmpty() }?.let { JSONObject(it) }?.let { h -> o.put("lat", h.optDouble("lat")).put("lon", h.optDouble("lon")).put("place", h.optString("place")) } } catch (e: Exception) { }
             l.add(o)
             while (l.size > WAITING) l.removeAt(0)
             save(l)
