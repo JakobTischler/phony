@@ -1,5 +1,8 @@
 // PHONY · start-up
 /* ---------- boot ---------- */
+// the canvases and the screen's shape are watched only now: drawing a shell needs every script loaded
+wins.forEach(o => new ResizeObserver(() => sizeWin(o)).observe(o.canvas));
+addEventListener('resize', layout);
 applyFx(); setVol(N ? Math.max(0, N.getVolume()) : S.vol); renderJList(); tapeChanged(); layout();
 const saved = store.get('src', null);
 if (N && saved){

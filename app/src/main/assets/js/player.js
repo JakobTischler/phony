@@ -8,7 +8,7 @@ const store = {
 /* ---------- state ---------- */
 // src.kind: demo (silent sample) · files (picked in a browser) · local (phone library) · remote (another app, e.g. Spotify)
 const S = {tape:store.get('tape', 0), userTape:store.get('tape', 0), tracks:DEMO.slice(), idx:0, t:0, playing:false, cue:0, fx:store.get('fx', true), vol:store.get('vol', .7),
-  motor:0, dispP:0, a1:0, a2:0, cOff:0, ejected:false, ej:0, src:{kind:'demo', title:'For the boat'}, startAt:0, open:false, cmdAt:0, albumMode:false,
+  motor:0, dispP:0, a1:0, a2:0, cOff:0, ejected:false, ej:0, src:{kind:'demo', title:'For the boat'}, startAt:0, open:false, mode:'cover', cmdAt:0, albumMode:false,
   r:{key:'', cur:null, hist:[], done:0, artKey:'', queue:[]}};
 S.tape = PL_TAPE; S.ctxHold = 0; S.expect = null;
 // Whatever isn't an album plays on a written tape. A drawer playlist brings its own; anything
@@ -275,7 +275,7 @@ function cacheShell(o){
   drawShell(c, tapeAt(S.tape), infoFor(S.idx));
 }
 function refreshShells(){ wins.forEach(cacheShell); }
-wins.forEach(o => new ResizeObserver(() => sizeWin(o)).observe(o.canvas));
+// (the canvases are watched for size from boot.js, once every script is in)
 function drawWin(o){
   if (!o.canvas.offsetParent || !o.canvas.width) return;
   const c = o.ctx, cw = o.canvas.width, ch = o.canvas.height;
@@ -597,7 +597,7 @@ function openSheet(){
   sheet.hidden = false;
 }
 function closeSheet(){ sheet.hidden = true; }
-$('#spine').addEventListener('click', openSheet);
+$('#spine').addEventListener('click', () => { if (S.mode === 'pocket' && !S.open) return; openSheet(); });
 $('#sheetclose').addEventListener('click', closeSheet);
 // called by the app after a permission prompt or a trip to settings
 window.phonyRefresh = () => { if (!sheet.hidden) openSheet(); };
@@ -618,17 +618,70 @@ $('#files').addEventListener('change', () => {
   renderJList(); loadTrack(0); tapeChanged();
 });
 
-/* ---------- closed / open follows the screen ---------- */
+/* ---------- closed / open / pocket follows the screen ----------
+   The Fold's cover screen is the closed player; its inner screen is the open one. A tall, narrow
+   phone (an S26 Ultra) gets the pocket: the closed player at its true proportions across the top,
+   and the J-card tucked in a pocket beneath it, pulled up by hand. The player is never stretched. */
+const WALK_H = 1 / .661;   // the closed player's height as a share of its width (the Fold's cover screen)
+function screenMode(){ const r = innerWidth / innerHeight; return r > .95 ? 'open' : r < .58 ? 'pocket' : 'cover'; }
+const inner = $('#inner');
 function layout(){
-  const open = innerWidth / innerHeight > .95;
-  if (open === S.open && layout.done) return; layout.done = true;
-  S.open = open;
-  $('#cover').hidden = open; $('#inner').hidden = !open;
+  const mode = screenMode();
+  if (mode === S.mode && layout.done) return; layout.done = true;
+  S.mode = mode; document.body.dataset.mode = mode;
+  const open = mode === 'open';
+  S.open = open;   // in the pocket, S.open means the card is pulled up
+  $('#cover').hidden = open; inner.hidden = mode === 'cover';
+  inner.classList.remove('up', 'down', 'away'); inner.style.transform = '';
   hideBox(); if (!open){ closeSheet(); if (typeof closeFold === 'function') closeFold(); }
+  if (mode === 'pocket') cardTo(false, true);
   if (S.ejected) showBox();
+  if (typeof applySkin === 'function') applySkin();   // the black shell's name tag
   requestAnimationFrame(() => { wins.forEach(sizeWin); markJList(); });
 }
-addEventListener('resize', layout);
+// (boot.js hooks layout to the window's resize, once every script is in)
+// whose player this is, written on the black shell. Until PHONY asks on install, the pocket phone is Shay's.
+function owner(){ return store.get('owner', null) || (S.mode === 'pocket' ? 'SHAY' : 'HUGH'); }
+
+/* ---------- the pocket: the J-card slides up over the player and back down ---------- */
+const pocketPx = () => innerWidth * WALK_H;   // how far down the card sits when it's in the pocket
+let cardDrag = null, cardMovedAt = 0;
+// a tap or drag has just moved the card: swallow the click that follows it
+const cardSettling = () => S.mode === 'pocket' && performance.now() - cardMovedAt < 450;
+function cardTo(up, instant){
+  if (S.mode !== 'pocket') return;
+  S.open = up; inner.classList.toggle('up', up); inner.classList.toggle('down', !up);
+  if (instant){ inner.style.transition = 'none'; void inner.offsetWidth; }
+  inner.style.transform = ''; inner.style.transition = '';
+  if (!up){ closeSheet(); if (typeof closeFold === 'function') closeFold(); }
+  markJList();
+}
+$('#inner .lid').addEventListener('pointerdown', e => {
+  if (S.mode !== 'pocket' || S.ejected || e.button > 0 || cardDrag) return;
+  if (typeof foldOpen !== 'undefined' && foldOpen) return;
+  // in the pocket the card comes up from anywhere on it; once up it goes back by its spine or the
+  // banner only, so the song list still scrolls
+  if (S.open && !e.target.closest('.spine, .now')) return;
+  cardDrag = {id:e.pointerId, y0:e.clientY, ly:e.clientY, lt:performance.now(), v:0, from:S.open ? 0 : pocketPx(), moved:false};
+});
+addEventListener('pointermove', e => {
+  const d = cardDrag; if (!d || e.pointerId !== d.id) return;
+  const dy = e.clientY - d.y0;
+  if (!d.moved){ if (Math.abs(dy) < 8) return; d.moved = true; inner.style.transition = 'none'; ensureAudio(); }
+  const now = performance.now(); d.v = (e.clientY - d.ly) / Math.max(1, now - d.lt); d.ly = e.clientY; d.lt = now;
+  inner.style.transform = `translateY(${Math.max(0, Math.min(pocketPx(), d.from + dy))}px)`;
+});
+const cardUp = e => {
+  const d = cardDrag; if (!d || e.pointerId !== d.id) return; cardDrag = null;
+  cardMovedAt = performance.now();
+  if (!d.moved){ if (!S.open){ ensureAudio(); sfx('tick'); cardTo(true); } else cardMovedAt = 0; return; }
+  const y = Math.max(0, Math.min(pocketPx(), d.from + e.clientY - d.y0));
+  // a flick decides; otherwise the card settles on whichever side it's nearer
+  const up = Math.abs(d.v) > .35 ? d.v < 0 : y < pocketPx() / 2;
+  sfx('tick'); cardTo(up);
+};
+addEventListener('pointerup', cardUp); addEventListener('pointercancel', cardUp);
+inner.addEventListener('click', e => { if (cardSettling()){ e.stopPropagation(); e.preventDefault(); } }, true);
 
 /* ---------- main loop ---------- */
 let last = performance.now(), rateTick = 0, timeTick = 0, cueSeekAt = 0;
@@ -685,7 +738,7 @@ function loop(now){
   if (S.src.kind === 'files') audio.volume = S.cue ? .35 : 1;
   runLeds.forEach(l => l.classList.toggle('on', S.motor > .5));
   face.classList.toggle('spinning', S.motor > .5); updateLcd(now);
-  if (S.open){
+  if (S.open || S.mode === 'pocket'){
     updateCounter();
     if (now - timeTick > 250){ timeTick = now; $('#nowtime').textContent = `${fmt(Math.max(0, S.t))} / ${fmt(dur(S.idx))}`; }
     if (foldOpen) syncWords();

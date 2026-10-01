@@ -21,7 +21,7 @@ function nowAlbum(){
 }
 const albumKey = al => ((al.title || '?') + '|' + (al.artist || '')).toLowerCase();
 function openFold(){
-  if (!S.open || foldOpen) return;
+  if (!S.open || foldOpen || (typeof cardSettling === 'function' && cardSettling())) return;
   ensureAudio();
   foldOpen = true; fold.hidden = false;
   const al = nowAlbum(); foldKey = albumKey(al); foldNotes = notesCache[foldKey] || null;

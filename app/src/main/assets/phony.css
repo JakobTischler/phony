@@ -256,6 +256,23 @@ button{-webkit-tap-highlight-color:transparent}
 .case.note .hw{font-family:var(--f-hand);font-size:6cqw;line-height:1;color:var(--pen);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform:rotate(-1deg)}
 .case:disabled{cursor:default}
 
+/* ---------- the pocket: a tall, narrow phone (S26 Ultra) ----------
+   The closed player sits across the top at the Fold's cover-screen proportions (never stretched);
+   the J-card is tucked in a pocket beneath it and slides up over the player when pulled. The
+   tape box lives under the player, as when closed: eject drops the card out of the way. */
+body[data-mode=pocket] #cover .walkman{bottom:auto;height:calc(100cqw * 1.513);box-shadow:0 2cqw 5cqw rgba(0,0,0,.6)}
+body[data-mode=pocket] #inner{--pocket:calc(100vw * 1.513);border-radius:0;z-index:3;transform:translateY(var(--pocket));transition:transform .45s cubic-bezier(.3,.8,.3,1)}
+body[data-mode=pocket] #inner.up{--pocket:0px}
+body[data-mode=pocket] #inner.away{--pocket:110vh}
+body[data-mode=pocket] .inner::after,body[data-mode=pocket] .half:nth-child(2){display:none}
+body[data-mode=pocket] .lid{padding-top:2.2cqw}
+body[data-mode=pocket] #inner.up .lid{box-shadow:0 -2cqw 5cqw rgba(0,0,0,.5)}
+/* a finger on the card moves the card; the song list scrolls only once the card is up */
+body[data-mode=pocket] #inner.down .lid,body[data-mode=pocket] .lid .spine,body[data-mode=pocket] .lid .now{touch-action:none}
+/* the fold-out J-card: one panel nearly fills the width; swipe between them */
+body[data-mode=pocket] .fold{--pw:min(86vw,calc(92vh * .64))}
+body[data-mode=pocket] .foldstrip{padding-left:7vw;padding-right:7vw}
+
 /* ---------- the fold-out J-card (tap the song banner) ---------- */
 .nowtext{cursor:pointer;position:relative}
 .pulltab{position:absolute;top:-1.6cqw;right:-2cqw;font-family:var(--f-print);font-weight:600;font-size:2.3cqw;letter-spacing:.14em;color:#8a7a5c;padding:.5cqw 1.4cqw;border-radius:.6cqw;background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 .2cqw rgba(60,50,30,.18)}

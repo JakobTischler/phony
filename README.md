@@ -1,9 +1,10 @@
 # PHONY
 
-A portable cassette player for the Galaxy Z Fold 8.
+A portable cassette player for the Galaxy Z Fold 8, and for a tall phone like the Galaxy S26 Ultra.
 
 - **Closed** (cover screen): the front of the player. Reels turn in the window, the keys on the silver side panel click, the tape pack moves from reel to reel as the side plays.
 - **Open** (inner screen): the J-card with the tracklist, tape counter and tape shelf on the left, the cassette filling the bay on the right.
+- **In the pocket** (a tall, narrow phone): the closed player sits across the top at its true proportions, never stretched, and the J-card is tucked in a pocket beneath it with its spine and the song banner showing. Tap or drag the card and it slides up over the player: the song list, the counter and a row of keys. Drag it down by its spine or the banner and it slips back. Everything else works as when closed: press ■ with the tape stopped and the card drops away, the player slides up and the tape box is underneath; tap the song title on the raised card to unfold the J-card. The page picks the pocket by the screen's shape, so it's the same app on both phones; the black shell's name tag reads PROPERTY OF SHAY on the pocket phone until PHONY asks for a name on install.
 
 ## Shells
 

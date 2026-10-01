@@ -87,7 +87,8 @@ let holdSkin = 0;
 function applySkin(){
   const k = SKINS[skinI];
   cover.dataset.skin = k.id; $('#inner').dataset.skin = k.id;
-  deco.innerHTML = k.deco; odeco.innerHTML = k.odeco || '';
+  const named = h => (h || '').replaceAll('PROPERTY OF HUGH', 'PROPERTY OF ' + owner());
+  deco.innerHTML = named(k.deco); odeco.innerHTML = named(k.odeco);
   // the hidden spot: one on the closed player, one on the open one
   $$('.secret-on').forEach(e => e.classList.remove('secret-on'));
   [k.secret ? $('#cover ' + k.secret) : deco.querySelector('.secret'), odeco.querySelector('.secret')].forEach(spot => {
@@ -104,7 +105,7 @@ function armSecret(el){
 }
 function nextSkin(){
   sfx('eject'); try { N && N.haptic(2); } catch (e) {}
-  const wm = S.open ? $('#inner .deckfull') : $('#cover .walkman'); wm.classList.remove('swapping'); void wm.offsetWidth; wm.classList.add('swapping');
+  const wm = S.mode === 'open' ? $('#inner .deckfull') : $('#cover .walkman'); wm.classList.remove('swapping'); void wm.offsetWidth; wm.classList.add('swapping');
   setTimeout(() => { skinI = (skinI + 1) % SKINS.length; store.set('skin', SKINS[skinI].id); applySkin(); sfx('insert'); }, 240);
   setTimeout(() => wm.classList.remove('swapping'), 520);
 }
@@ -120,7 +121,7 @@ function updateLcd(now){
   const on = S.motor > .5;
   $$('#cover .lcd .eq i').forEach((b, i) => { const base = on ? .25 + .6 * Math.abs(Math.sin(now / (260 + i * 37) + i * 1.7)) * (1 - i / 26) + Math.random() * .15 : .08; b.style.height = Math.min(100, base * 100) + '%'; });
 }
-/* ---------- the pencil trick: open view only; stick it in a reel and wind ---------- */
+/* ---------- the pencil trick: open view only (the bay is hidden in the pocket); stick it in a reel and wind ---------- */
 // the top reel is the take-up reel: winding it pulls the tape forward. The bottom one winds it back.
 /* ---------- the pencils: six in the jar, one picked at random each time ---------- */
 // drawn as a six-sided pencil seen from the side, so it can turn: faces roll past and the lettering goes with them

@@ -380,9 +380,11 @@ function showBox(){
   readRadio();
   if (N){ readBox(); N.boxSync(false); }
   renderBoxes();
+  // in the pocket the card drops out of the way and the box is under the player, as when closed
+  if (S.mode === 'pocket'){ cardTo(false); inner.classList.add('away'); }
   if (S.open) $('.lid').classList.add('boxopen'); else $('#cover').classList.add('boxopen');
 }
-function hideBox(){ $('.lid').classList.remove('boxopen'); $('#cover').classList.remove('boxopen'); }
+function hideBox(){ $('.lid').classList.remove('boxopen'); $('#cover').classList.remove('boxopen'); inner.classList.remove('away'); }
 // demo: Spotify just played a whole album; it gets a case at the top of box 1
 let moreI = 0;
 window.phonyBoxNew = () => {
