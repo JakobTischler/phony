@@ -233,7 +233,13 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             onChange()
         } catch (e: Exception) {
             state = if (boxFile.exists()) "ready" else "error"
-            message = if (!signedIn) "Sign in to Spotify again." else "Couldn't reach Spotify."
+            message = when {
+                !signedIn -> "Sign in to Spotify again."
+                // development mode: Spotify only serves the accounts listed under the app's users in the developer dashboard
+                e is HttpError && e.code == 403 -> "Spotify won't serve this account yet: add it to PHONY's users in the Spotify developer dashboard."
+                e is HttpError -> "Spotify said no (${e.message})."
+                else -> "Couldn't reach Spotify."
+            }
             onChange()
         } finally { syncing.set(false) }
     }
@@ -262,8 +268,11 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         c.setRequestProperty("Authorization", "Bearer " + accessToken())
         try {
             val code = c.responseCode
-            if (code == 401) { access = null; throw HttpError(code) }
-            if (code != 200) throw HttpError(code)
+            if (code == 401) access = null
+            if (code != 200) {
+                val why = try { JSONObject(c.errorStream.bufferedReader().use { it.readText() }).optJSONObject("error")?.optString("message") ?: "" } catch (e: Exception) { "" }
+                throw HttpError(code, why)
+            }
             return c.inputStream.bufferedReader().use { it.readText() }
         } finally { c.disconnect() }
     }
