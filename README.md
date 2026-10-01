@@ -44,7 +44,7 @@ An album plays like a cassette: Side A is the first half of the songs. When Side
 
 ## The pencil trick
 
-Open, touch a reel and a pencil comes in from the corner, pushes into the hub until its six sides catch the teeth, and turns as it winds: the top reel winds forward, the bottom one back. Let go and it plays from there. There are six pencils in the jar (a classic yellow, a chewed stub, black-and-red stripes, bare wood, a green drafting pencil, a souvenir stub from St. George's), picked at random.
+Open, touch a reel and a pencil comes in from the corner, puts its point in the hub, and turns as it winds: the top reel winds forward, the bottom one back. Let go and it plays from there. There are six pencils in the jar (a classic yellow, a chewed stub, black-and-red stripes, bare wood, a green drafting pencil, a souvenir stub from St. George's), one a day: the same pencil all day, a different one tomorrow.
 
 ## The J-card
 

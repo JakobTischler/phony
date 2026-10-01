@@ -2839,7 +2839,15 @@ function drawPencil(c, P, L, T, phi, clip){
 }
 
 const pencil = $('#pencil'), pwob = $('#pencil .pwob'), pcv = $('#pencil canvas');
-let pen = null, lastPencil = -1;
+let pen = null;
+// the pencil you're using today; tomorrow you'll have grabbed a different one
+function todaysPencil(){
+  const d = new Date(), today = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  const got = store.get('pencil', null);
+  if (got && got.day === today && PENCILS[got.i]) return got.i;
+  let i; do { i = Math.floor(Math.random() * PENCILS.length); } while (got && i === got.i && PENCILS.length > 1);
+  store.set('pencil', {day:today, i}); return i;
+}
 // the pencil in hand: size and draw it (clip: how much of it has gone into the reel)
 function penCanvas(cv, P, halfW, thick){
   const T = thick, L = P.len * halfW, d = Math.min(3, devicePixelRatio || 1);
@@ -2849,7 +2857,7 @@ function penCanvas(cv, P, halfW, thick){
 }
 function redrawPen(){
   if (!pen) return; const g = pen.geo, c = pcv.getContext('2d'); c.setTransform(g.d, 0, 0, g.d, 0, 0);
-  drawPencil(c, pen.P, g.L, g.T, pen.phi, pen.inserted ? {x:g.anchor, r:pen.holeR * .96} : null);
+  drawPencil(c, pen.P, g.L, g.T, pen.phi, null);
 }
 function reelSpots(){
   const o = wins.find(w => w.mode === 'deck'); if (!o || !o.canvas.width) return null;
@@ -2873,11 +2881,11 @@ function penDown(e){
   const which = Math.hypot(x - sp.ff.x, y - sp.ff.y) < sp.r ? 'ff' : Math.hypot(x - sp.rew.x, y - sp.rew.y) < sp.r ? 'rew' : null;
   if (!which) return;
   e.preventDefault(); ensureAudio();
-  let pi; do { pi = Math.floor(Math.random() * PENCILS.length); } while (pi === lastPencil && PENCILS.length > 1); lastPencil = pi;
+  const pi = todaysPencil();
   const halfW = $('#inner .deckfull').parentElement.clientWidth;
   pen = {which, id:e.pointerId, t0:performance.now(), P:PENCILS[pi], phi:Math.random() * TAU, inserted:false, holeR:sp.hole, last:performance.now()};
   // it goes in past the sharpened end, so the six sides of the body grip the teeth of the reel
-  pen.geo = penCanvas(pcv, pen.P, halfW, halfW * .066); pen.geo.anchor = pen.geo.T * 2.3 + sp.hole * 1.05;
+  pen.geo = penCanvas(pcv, pen.P, halfW, halfW * .066); pen.geo.anchor = pen.geo.T * .3;
   pcv.style.marginLeft = (-pen.geo.anchor) + 'px'; pcv.dataset.p = pen.P.id;
   redrawPen();
   setTimeout(() => { if (pen && pen.which === which){ pen.inserted = true; redrawPen(); } }, 230);
