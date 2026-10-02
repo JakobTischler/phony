@@ -411,6 +411,17 @@ body[data-mode=pocket] .foldstrip{padding-left:7vw;padding-right:7vw}
 .skeys .scancel{background:none;color:#8a7a5c}
 .skeys button:disabled{opacity:.35;cursor:default}
 
+/* Plex uses the existing paper setup card, with room for long server/library lists. */
+.plexsetup{position:fixed;padding:4vh 0;box-sizing:border-box}
+.plexcard{max-height:100%;overflow-y:auto;gap:14px;padding:24px;flex-shrink:1}
+.plexcopy{margin:0;font:15px/1.5 Georgia,"Times New Roman",serif;overflow-wrap:anywhere}
+.plexchoice{padding:12px 14px;text-align:left;border:1px solid #bbae92;border-radius:5px;background:#fff9eb;color:#2a241a;font:600 15px/1.4 var(--f-print);cursor:pointer;overflow-wrap:anywhere}
+.plexchoice:disabled{opacity:.5;cursor:default}
+.plexcard button:focus-visible{outline:3px solid #b04a10;outline-offset:2px}
+.plexstatus:empty{display:none}
+.plexstatus{color:#91401c}
+.plexcard .skeys{flex-wrap:wrap;margin-top:0}
+
 /* a mixtape's J-card */
 .fp.mixfront canvas{position:absolute;inset:0;width:100%;height:100%}
 .fp.mixspine .mixspinein{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,#efe4c8,#f7efdb 40%,#ece0c2)}

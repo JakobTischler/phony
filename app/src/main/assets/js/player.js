@@ -577,6 +577,7 @@ function heading(t){ const h = document.createElement('h4'); h.textContent = t; 
 function openSheet(){
   ensureAudio(); sheetBody.innerHTML = '';
   if (N){
+    if (typeof appendPlexSource === 'function') appendPlexSource(sheetBody);
     sheetBody.append(heading('FROM ANOTHER APP'));
     if (N.hasListenerAccess()) sheetBody.append(row('Whatever is playing now', 'Spotify, YouTube Music, podcasts. PHONY becomes the remote.', () => { closeSheet(); chooseSource({kind:'remote'}); }));
     else sheetBody.append(row('Let PHONY see what is playing', 'Opens Android settings. Turn on PHONY under notification access, then come back.', () => N.openListenerSettings(), 'ask'));

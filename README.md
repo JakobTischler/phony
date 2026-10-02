@@ -25,6 +25,12 @@ Download it on the phone and open it to install (Android asks once to allow inst
 
 Spotify lets a development-mode app serve five accounts, and signs you out after six months; when that happens the note in the box says so and a tap signs you back in.
 
+## Plex (connection setup)
+
+This fork adds Plex sign-in and server/music-library selection in the J-card's
+music chooser. The selection is saved for the next launch. Plex browsing and
+playback are not included yet. See [Plex setup](docs/plex-setup.md) for details.
+
 ## Shells
 
 PHONY has a bunch of shells. There's no menu to find them. Each shell hides a spot somewhere on its face; press and hold it for about a second and the next shell snaps on. A quick tap does nothing. Whatever shell you stick with will always open up with it already on.

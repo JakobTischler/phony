@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var library: Library
     private lateinit var remote: RemoteWatcher
     private lateinit var box: SpotifyBox
+    private lateinit var plex: com.hughhowey.phony.plex.PlexConnection
     private lateinit var places: Places
     private lateinit var photos: Photos
     private lateinit var radio: Radio
@@ -91,6 +92,9 @@ class MainActivity : ComponentActivity() {
         window.setBackgroundDrawable(null)
 
         library = Library(this)
+        plex = com.hughhowey.phony.plex.PlexConnection(this,
+            { js("window.phonyPlexChanged && window.phonyPlexChanged()") },
+            { url -> startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) })
         remote = RemoteWatcher(this)
         box = SpotifyBox(this, remote) {
             js("window.phonyBoxChanged && window.phonyBoxChanged()")
@@ -175,6 +179,7 @@ class MainActivity : ComponentActivity() {
         main.removeCallbacks(tick)
         main.post(tick)
         library.invalidate()
+        plex.resume()
         refreshPage()
         box.sync(false)
         box.watch(true)
@@ -183,6 +188,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        plex.pause()
         main.removeCallbacks(tick)
         box.watch(false)
         super.onPause()
@@ -208,6 +214,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         main.removeCallbacks(tick)
         box.release()
+        plex.close()
         notes.stopped = true
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
@@ -236,6 +243,17 @@ class MainActivity : ComponentActivity() {
      * so anything touching the player is handed to the main thread.
      */
     inner class Bridge {
+
+        // Plex setup is independent of Spotify and does not change the current audio source.
+        @JavascriptInterface fun plexStatus(): String = plex.status()
+        @JavascriptInterface fun plexOpen() = onMain { plex.open() }
+        @JavascriptInterface fun plexLogin() = onMain { plex.login() }
+        @JavascriptInterface fun plexCheckLogin() = onMain { plex.resume() }
+        @JavascriptInterface fun plexCancelLogin() = onMain { plex.cancelLogin() }
+        @JavascriptInterface fun plexServers() = onMain { plex.refreshServers() }
+        @JavascriptInterface fun plexSelectServer(id: String) = onMain { plex.selectServer(id) }
+        @JavascriptInterface fun plexSelectLibrary(id: String) = onMain { plex.selectLibrary(id) }
+        @JavascriptInterface fun plexSignOut() = onMain { plex.signOut() }
 
         // ----- songs saved on the phone -----
         @JavascriptInterface fun hasAudioPermission(): Boolean = library.hasPermission()
