@@ -185,34 +185,64 @@ class LinerNotes(private val ctx: Context, private val box: SpotifyBox, private 
     private fun lyricsNow(track: String, artist: String, album: String, durSec: Int): String? {
         val key = lyricKey(track, artist)
         read("l", key)?.let { saved ->
-            // "no words on file" is asked again after a month; LRCLIB keeps growing
+            // "no words on file" is asked again after a week; LRCLIB keeps growing
             val j = try { JSONObject(saved) } catch (e: Exception) { null }
-            if (j == null || !j.optBoolean("none") || System.currentTimeMillis() - j.optLong("at") < 30L * 86_400_000) return saved
+            if (j == null || !j.optBoolean("none") || System.currentTimeMillis() - j.optLong("at") < 7L * 86_400_000) return saved
         }
         if (!online()) return null
         netFailed.set(false)
         val out = JSONObject().put("track", track)
         try {
-            val a = firstArtist(artist)
-            var j: JSONObject? = null
-            for (t in listOf(track, clean(track)).distinct()) {
-                val q = "track_name=" + enc(t) + "&artist_name=" + enc(a) + (if (album.isNotBlank()) "&album_name=" + enc(album) else "") + (if (durSec > 0) "&duration=$durSec" else "")
-                j = http("https://lrclib.net/api/get?$q")?.let { JSONObject(it) }
-                if (j != null) break
-            }
-            if (j == null) {
-                val arr = http("https://lrclib.net/api/search?track_name=" + enc(clean(track)) + "&artist_name=" + enc(a))?.let { JSONArray(it) }
-                if (arr != null) for (i in 0 until arr.length()) { val c = arr.getJSONObject(i); if (!c.optString("plainLyrics").isNullOrBlank() || c.optBoolean("instrumental")) { j = c; break } }
-            }
-            if (j != null) out.put("plain", j.optString("plainLyrics").takeIf { it != "null" } ?: "")
-                .put("synced", j.optString("syncedLyrics").takeIf { it != "null" } ?: "")
-                .put("instrumental", j.optBoolean("instrumental"))
+            val j = findLyrics(track, artist, album, durSec)
+            if (j != null) out.put("plain", str(j, "plainLyrics")).put("synced", str(j, "syncedLyrics")).put("instrumental", j.optBoolean("instrumental"))
             else out.put("none", true).put("at", System.currentTimeMillis())
         } catch (e: Exception) { }
         val s = out.toString()
         if (!netFailed.get()) write("l", key, s)
         return s
     }
+
+    /**
+     * Asks LRCLIB several ways before giving up: an exact ask with everything it knows, then
+     * without the album (Spotify's "(Deluxe Edition)" titles rarely match what people filed the
+     * words under), then with the song and artist names cleaned up; after that a search by name,
+     * and a free-text search. Of the search results it takes the one closest in length (a
+     * different cut of the song is no use), and, within reason, words that are timed over plain.
+     */
+    private fun findLyrics(track: String, artist: String, album: String, durSec: Int): JSONObject? {
+        val tracks = listOf(track, clean(track)).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val artists = listOf(artist, firstArtist(artist)).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        for (t in tracks) for (a in artists) for (withAlbum in listOf(true, false)) {
+            if (withAlbum && album.isBlank()) continue
+            val q = "track_name=" + enc(t) + "&artist_name=" + enc(a) + (if (withAlbum) "&album_name=" + enc(album) else "") + (if (durSec > 0) "&duration=$durSec" else "")
+            http("https://lrclib.net/api/get?$q")?.let { return JSONObject(it) }
+        }
+        val asks = mutableListOf<String>()
+        for (t in tracks) for (a in artists) asks += "track_name=" + enc(t) + "&artist_name=" + enc(a)
+        for (t in tracks) asks += "q=" + enc(t + " " + (artists.lastOrNull() ?: ""))
+        for (q in asks.distinct()) {
+            val arr = http("https://lrclib.net/api/search?$q")?.let { try { JSONArray(it) } catch (e: Exception) { null } } ?: continue
+            closest(arr, durSec)?.let { return it }
+        }
+        return null
+    }
+
+    private fun closest(arr: JSONArray, durSec: Int): JSONObject? {
+        var best: JSONObject? = null; var bestScore = Double.MAX_VALUE
+        for (i in 0 until arr.length()) {
+            val c = arr.getJSONObject(i)
+            if (str(c, "plainLyrics").isBlank() && !c.optBoolean("instrumental")) continue
+            val d = c.optDouble("duration", 0.0)
+            val off = if (durSec > 0 && d > 0) Math.abs(d - durSec) else 0.0
+            if (off > 10) continue
+            val score = off + if (str(c, "syncedLyrics").isBlank()) 5 else 0
+            if (score < bestScore) { bestScore = score; best = c }
+        }
+        return best
+    }
+
+    /** A string field, or "" when it's missing or JSON null. */
+    private fun str(j: JSONObject, k: String): String = if (j.isNull(k)) "" else j.optString(k, "")
 
     // ---------- the whole box, in the background, on Wi-Fi ----------
 
@@ -237,7 +267,7 @@ class LinerNotes(private val ctx: Context, private val box: SpotifyBox, private 
                         val t = ts.getJSONObject(k)
                         if (has("l", lyricKey(t.optString("t"), artist))) continue
                         lyricsNow(t.optString("t"), artist, title, t.optInt("d"))
-                        rest(700)
+                        rest(1000)
                     }
                 }
             } finally { fetching = false }
