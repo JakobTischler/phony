@@ -27,7 +27,7 @@ Spotify lets a development-mode app serve five accounts, and signs you out after
 
 ## Shells
 
-PHONY has seven shells: blue, black recorder, pink 80s, clear orange, silver digital, beat-up yellow and clear blush. There's no menu. Each shell hides a spot (a label, a sticker, a rubber band, a loose screw, a button); press and hold it for about a second and the next shell snaps on. A quick tap does nothing. The shell you land on stays.
+PHONY has fourteen shells: blue, black recorder, pink 80s, clear orange, silver digital, beat-up yellow, clear blush, a silver radio recorder with an AM/FM dial, a shoebox desk recorder with piano keys and a DUR counter, a kid's player in yellow and green, a smoky clear one with the works showing, a clear-front hi-fi with chrome buttons, an all-weather yellow one with a latch and a strap, and silver with a red stripe. There's no menu. Each shell hides a spot (a label, a sticker, a rubber band, a loose screw, a button, a knob, a badge); press and hold it for about a second and the next shell snaps on. A quick tap does nothing. The shell you land on stays.
 
 ## Music
 

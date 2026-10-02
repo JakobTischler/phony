@@ -686,7 +686,8 @@ inner.addEventListener('click', e => { if (cardSettling()){ e.stopPropagation();
 let last = performance.now(), rateTick = 0, timeTick = 0, cueSeekAt = 0;
 const runLeds = $$('.runled');
 function loop(now){
-  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  // never zero: the first frame's time can equal the clock read while the scripts loaded, and 0/0 would poison the reels
+  const dt = Math.max(.001, Math.min(.05, (now - last) / 1000)); last = now;
   S.ej += ((S.ejected ? 1 : 0) - S.ej) * Math.min(1, dt * 9);
   const moving = (S.playing || S.cue) && !S.ejected;
   S.motor += ((moving ? 1 : 0) - S.motor) * Math.min(1, dt * (moving ? 14 : 20));

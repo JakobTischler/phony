@@ -3,6 +3,7 @@
 const svgBolt = (c1, c2) => `<svg viewBox="0 0 40 60" width="100%" height="100%"><path d="M24 1 L4 34 H18 L12 59 L36 22 H22 Z" fill="${c1}" stroke="${c2}" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
 const svgStar = (c1, c2) => `<svg viewBox="0 0 50 50" width="100%" height="100%"><path d="M25 2 L31 18 L48 18 L34 29 L39 47 L25 36 L11 47 L16 29 L2 18 L19 18 Z" fill="${c1}" stroke="${c2}" stroke-width="2.5" stroke-linejoin="round"/></svg>`;
 const svgHeart = (c1, c2) => `<svg viewBox="0 0 50 46" width="100%" height="100%"><path d="M25 44 C8 31 2 22 2 13 C2 6 8 2 14 2 C19 2 23 5 25 9 C27 5 31 2 36 2 C42 2 48 6 48 13 C48 22 42 31 25 44 Z" fill="${c1}" stroke="${c2}" stroke-width="3"/></svg>`;
+const svgPaw = c => `<svg viewBox="0 0 50 50" width="100%" height="100%"><ellipse cx="25" cy="33" rx="12" ry="10" fill="${c}"/><circle cx="10" cy="22" r="5" fill="${c}"/><circle cx="20" cy="12" r="5.2" fill="${c}"/><circle cx="31" cy="12" r="5.2" fill="${c}"/><circle cx="41" cy="22" r="5" fill="${c}"/></svg>`;
 const svgSmile = `<svg viewBox="0 0 50 50" width="100%" height="100%"><circle cx="25" cy="25" r="23" fill="#ffe13a" stroke="#1a1a1a" stroke-width="2.5"/><circle cx="17" cy="19" r="3.4" fill="#1a1a1a"/><circle cx="33" cy="19" r="3.4" fill="#1a1a1a"/><path d="M13 29 Q25 42 37 29" fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/></svg>`;
 const gear = (x, y, d, cls='') => `<div class="gear ${cls}" style="position:absolute;left:${x}cqw;top:${y}%;width:${d}cqw;height:${d}cqw"></div>`;
 const GUTS = gear(4, 6, 16, 'solid') + gear(14, 10, 9, 'rev') + gear(55, 70, 18, 'solid rev') + gear(62, 83, 8) +
@@ -78,6 +79,52 @@ const SKINS = [
     <div class="stk" style="right:4cqw;top:1.2%;width:7cqw;height:7cqw;box-shadow:none;filter:drop-shadow(0 .3cqw .4cqw rgba(0,0,0,.25));transform:rotate(16deg)">${svgStar('#fff','#e0a1b8')}</div>
     <div class="tag" style="left:4cqw;top:1%;font-size:4.6cqw;color:#fff;transform:rotate(-6deg);text-shadow:0 .2cqw .3cqw rgba(160,60,100,.5)">xoxo</div>
     <div class="scotch" style="right:-2cqw;bottom:8%;width:20cqw;height:5.4cqw;transform:rotate(-30deg)"></div>`},
+  // the dial's needle sits on a different station each time the shell goes on
+  {id:'radio', name:'Silver radio recorder', deco:() => `
+    <div class="dial"><span class="row am"><b>AM</b><b>52</b><b>75</b><b>100</b><b>130</b><b>171</b></span><span class="row fm"><b>FM</b><b>87</b><b>92</b><b>96</b><b>102</b><b>108</b></span>
+      <i class="needle" style="left:${(14 + Math.random() * 60).toFixed(1)}%"></i><i class="knob secret"></i></div>
+    <div class="grille2"></div>
+    <div class="scotch" style="left:-3cqw;top:38%;width:16cqw;height:5cqw;transform:rotate(62deg)"></div>`, odeco:`
+    <div class="dial" style="left:3cqw;right:auto;width:30cqw;top:3cqw;height:7cqw;font-size:1.2cqw"><span class="row am" style="right:7cqw"><b>AM</b><b>52</b><b>75</b><b>100</b><b>130</b><b>171</b></span><span class="row fm" style="right:7cqw"><b>FM</b><b>87</b><b>92</b><b>96</b><b>102</b><b>108</b></span><i class="needle" style="left:44%"></i><i class="knob secret" style="width:4.6cqw;height:4.6cqw;margin-top:-2.3cqw"></i></div>`},
+  {id:'shoebox', name:'Shoebox recorder', counter:true, deco:`
+    <div class="lcdmini secret" style="right:7cqw;bottom:2.4%"><b>DUR</b><span class="skincnt">000</span></div>
+    <div class="tag" style="left:6cqw;bottom:3.2%;font-size:3.6cqw;color:#2b2b30;transform:rotate(-3deg);padding:.4cqw 1.6cqw;background:rgba(232,218,184,.95);box-shadow:0 .3cqw .5cqw rgba(0,0,0,.25)">do not erase</div>
+    <div class="screw" style="left:2cqw;top:1.4%"></div><div class="screw" style="right:2cqw;top:1.4%"></div>`, odeco:`
+    <div class="lcdmini secret" style="right:4cqw;bottom:3cqw"><b>DUR</b><span class="skincnt">000</span></div>
+    <div class="tag" style="left:4cqw;top:3cqw;font-size:3.2cqw;color:#2b2b30;transform:rotate(-2deg);padding:.4cqw 1.6cqw;background:rgba(232,218,184,.95);box-shadow:0 .3cqw .5cqw rgba(0,0,0,.25)">do not erase</div>`},
+  {id:'toy', name:'Kid\'s player', deco:`
+    <div class="paw secret" style="left:4cqw;top:3%;transform:rotate(-18deg)">${svgPaw('#7b3fb8')}</div>
+    <div class="paw" style="right:5cqw;top:8%;width:6cqw;height:6cqw;transform:rotate(22deg)">${svgPaw('#7b3fb8')}</div>
+    <div class="paw" style="left:8cqw;bottom:4%;width:6.5cqw;height:6.5cqw;transform:rotate(10deg)">${svgPaw('#e84a7f')}</div>
+    <div class="stk" style="right:4cqw;bottom:3%;width:10cqw;height:10cqw;border-radius:50%;background:#5cc24a;color:#fff;font-size:5cqw;box-shadow:0 .5cqw 0 #2f7f34,0 .8cqw 1cqw rgba(0,0,0,.25)">♪</div>`, odeco:`
+    <div class="paw secret" style="left:3cqw;bottom:3cqw;width:10cqw;height:10cqw;transform:rotate(-14deg)">${svgPaw('#7b3fb8')}</div>
+    <div class="paw" style="right:4cqw;top:3cqw;width:7cqw;height:7cqw;transform:rotate(18deg)">${svgPaw('#e84a7f')}</div>`},
+  {id:'smoke', name:'Smoky clear', guts:true, deco:`
+    <div class="mesh" style="left:6cqw;right:6cqw;top:2.6%;height:5.2cqw"></div>
+    <div class="plate secret" style="left:50%;bottom:3.4%;transform:translateX(-50%);white-space:nowrap">STEREO CASSETTE PLAYER</div>
+    <div class="screw" style="left:2cqw;bottom:2%;width:3cqw;height:3cqw"></div><div class="screw" style="right:2cqw;bottom:2%;width:3cqw;height:3cqw"></div>`, odeco:`
+    <div class="mesh" style="left:3cqw;right:3cqw;top:3cqw;height:5cqw"></div>
+    <div class="plate secret" style="right:4cqw;bottom:3.5cqw;transform:rotate(-2deg);white-space:nowrap">STEREO CASSETTE PLAYER</div>`},
+  {id:'hifi', name:'Clear-front hi-fi', deco:`
+    <div class="chromerow" style="left:50%;top:1.8%;transform:translateX(-50%)"><i class="chrome"></i><i class="chrome"></i><i class="chrome"></i><i class="chrome secret"></i></div>
+    <div class="engrave" style="left:0;right:0;bottom:2.2%;text-align:center;color:#4a4f56">DIRECT DRIVE · METAL TAPE · NR</div>`, odeco:`
+    <div class="chromerow" style="left:4cqw;top:3cqw"><i class="chrome"></i><i class="chrome"></i><i class="chrome secret"></i></div>
+    <div class="engrave" style="right:4cqw;bottom:3.4cqw;color:#4a4f56">DIRECT DRIVE</div>`},
+  {id:'sport', name:'All-weather', deco:`
+    <div class="latch" style="left:10cqw;right:10cqw;top:2%"></div>
+    <div class="oprled secret" style="right:5cqw;top:9%"><i></i>OPR · BATT</div>
+    <div class="tag" style="left:5cqw;top:8.6%;font-family:var(--f-print);font-weight:800;font-style:italic;font-size:4.2cqw;letter-spacing:.06em;color:#141414">ALL-WEATHER</div>
+    <div class="strap" style="left:4cqw;bottom:2%;transform:rotate(-20deg)"></div>
+    <div class="scuff" style="right:2cqw;bottom:12%;width:12cqw;height:18cqw;opacity:.6"></div>`, odeco:`
+    <div class="latch" style="left:6cqw;right:6cqw;top:2.6cqw"></div>
+    <div class="oprled secret" style="right:5cqw;bottom:3.4cqw"><i></i>OPR · BATT</div>
+    <div class="strap" style="left:4cqw;bottom:3cqw;transform:rotate(-16deg)"></div>`},
+  {id:'stripe', name:'Silver stripe', deco:`
+    <div class="redline" style="left:0;right:0;top:3.6%"></div><div class="redline" style="left:0;right:0;top:3.6%;margin-top:2cqw;height:.5cqw;opacity:.8"></div>
+    <div class="badge secret" style="right:5cqw;bottom:2.4%;transform:rotate(-2deg)">HI·FI</div>
+    <div class="scotch" style="left:-3cqw;bottom:14%;width:18cqw;height:5cqw;transform:rotate(-58deg)"></div>`, odeco:`
+    <div class="redline" style="left:0;right:0;top:4cqw"></div><div class="redline" style="left:0;right:0;top:4cqw;margin-top:2cqw;height:.5cqw;opacity:.8"></div>
+    <div class="badge secret" style="right:4cqw;bottom:3.4cqw;transform:rotate(-2deg)">HI·FI</div>`},
 ];
 let skinI = (() => { const q = new URLSearchParams(location.search).get('skin'); const f = SKINS.findIndex(k => k.id === q); return f >= 0 ? f : Math.max(0, SKINS.findIndex(k => k.id === store.get('skin', 'blue'))); })();
 const cover = $('#cover'), face = $('#cover .face'), deco = $('#cover .deco'), odeco = $('#inner .deckfull .deco');
@@ -88,7 +135,8 @@ function applySkin(){
   const k = SKINS[skinI];
   cover.dataset.skin = k.id; $('#inner').dataset.skin = k.id;
   const named = h => (h || '').replaceAll('PROPERTY OF HUGH', ownerTag());
-  deco.innerHTML = named(k.deco); odeco.innerHTML = named(k.odeco);
+  const html = d => named(typeof d === 'function' ? d() : d);
+  deco.innerHTML = html(k.deco); odeco.innerHTML = html(k.odeco);
   // the hidden spot: one on the closed player, one on the open one
   $$('.secret-on').forEach(e => e.classList.remove('secret-on'));
   [k.secret ? $('#cover ' + k.secret) : deco.querySelector('.secret'), odeco.querySelector('.secret')].forEach(spot => {
@@ -113,10 +161,12 @@ applySkin();
 // the digital display follows the tape
 let lcdT = 0, lcdKey = '';
 function updateLcd(now){
-  if (SKINS[skinI].id !== 'digital' || now - lcdT < 110) return; lcdT = now;
+  if (now - lcdT < 110) return; lcdT = now;
+  const v = Math.floor(((((S.a2 - S.cOff) / TAU * .55) % 1000) + 1000) % 1000);
+  if (SKINS[skinI].counter){ const t = String(v).padStart(3, '0'); $$('.skincnt').forEach(e => { if (e.textContent !== t) e.textContent = t; }); }
+  if (SKINS[skinI].id !== 'digital') return;
   const tr = S.tracks[S.idx] || {}, key = (tr.title || '') + (tr.artist || '');
   if (key !== lcdKey){ lcdKey = key; $('#cover .lcdtitle').textContent = [tr.title, tr.artist].filter(Boolean).join('  ·  ') || 'NO TAPE'; }
-  const v = Math.floor(((((S.a2 - S.cOff) / TAU * .55) % 1000) + 1000) % 1000);
   $('#cover .lcdcnt').textContent = String(v).padStart(3, '0');
   const on = S.motor > .5;
   $$('#cover .lcd .eq i').forEach((b, i) => { const base = on ? .25 + .6 * Math.abs(Math.sin(now / (260 + i * 37) + i * 1.7)) * (1 - i / 26) + Math.random() * .15 : .08; b.style.height = Math.min(100, base * 100) + '%'; });
