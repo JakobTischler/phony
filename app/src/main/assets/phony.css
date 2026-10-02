@@ -393,6 +393,24 @@ body[data-mode=pocket] .foldstrip{padding-left:7vw;padding-right:7vw}
 .nkeys button{font-family:var(--f-device);font-size:max(12px,1.5cqw);letter-spacing:.2em;border:0;border-radius:999px;padding:1.6vh 3vw;background:#f6ead6;color:#2a241a;cursor:pointer}
 .nkeys .nerase{background:#f07487;color:#fff}
 .nkeys button:disabled{opacity:.35;cursor:default}
+/* the two cards that ask for something once: a name for the label, a Spotify client ID */
+.setup{position:absolute;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;padding-top:9vh;background:rgba(18,12,8,.86);opacity:0;transition:opacity .3s;container-type:inline-size}
+.setup.show{opacity:1}.setup.gone{opacity:0}
+.setupcard{width:min(84cqw,520px);container-type:inline-size;display:flex;flex-direction:column;gap:4cqw;padding:6cqw 6.5cqw 5.5cqw;box-sizing:border-box;border-radius:1.8cqw;background:linear-gradient(180deg,#f6efdf,#ebe0c6);box-shadow:0 2cqw 5cqw rgba(0,0,0,.6);color:#2a241a}
+.setupcard .sk{font-family:var(--f-print);font-weight:600;font-size:max(12px,3.4cqw);letter-spacing:.22em;color:#c8372d}
+.dymostrip{display:flex;align-items:center;gap:2cqw;padding:2cqw 3cqw;border-radius:.6cqw;background:#101010;box-shadow:0 .4cqw .6cqw rgba(0,0,0,.5);transform:rotate(-1deg)}
+.dymolead,.dymoin{font-family:var(--f-print);font-weight:800;font-size:max(15px,4.6cqw);letter-spacing:.28em;color:#f2f2f2;text-transform:uppercase;text-shadow:0 .15cqw 0 rgba(255,255,255,.2)}
+.dymoin{flex:1;min-width:0;background:none;border:0;outline:0;padding:0;caret-color:#f2f2f2}
+.dymoin::placeholder{color:rgba(242,242,242,.3)}
+.ssteps{margin:0;padding-left:5cqw;font-family:Georgia,"Times New Roman",serif;font-size:max(13px,3.6cqw);line-height:1.5}
+.ssteps li{margin-bottom:.8cqw}
+.idin{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:max(14px,3.8cqw);letter-spacing:.06em;padding:2cqw 2.6cqw;border:0;border-radius:.6cqw;background:#fff;box-shadow:inset 0 0 0 .3cqw rgba(60,50,30,.25);color:#2a241a;outline:0}
+.idin:focus{box-shadow:inset 0 0 0 .4cqw var(--orange)}
+.skeys{display:flex;justify-content:flex-end;gap:2.4cqw;margin-top:1cqw}
+.skeys button{font-family:var(--f-device);font-size:max(11px,2.6cqw);letter-spacing:.2em;border:0;border-radius:999px;padding:2cqw 4cqw;background:#2a241a;color:#f6ead6;cursor:pointer}
+.skeys .scancel{background:none;color:#8a7a5c}
+.skeys button:disabled{opacity:.35;cursor:default}
+
 /* a mixtape's J-card */
 .fp.mixfront canvas{position:absolute;inset:0;width:100%;height:100%}
 .fp.mixspine .mixspinein{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,#efe4c8,#f7efdb 40%,#ece0c2)}

@@ -6,6 +6,25 @@ A portable cassette player for the Galaxy Z Fold 8, and for a tall phone like th
 - **Open** (inner screen): the J-card with the tracklist, tape counter and tape shelf on the left, the cassette filling the bay on the right.
 - **In the pocket** (a tall, narrow phone): the closed player sits across the top at its true proportions, never stretched, and the J-card is tucked in a pocket beneath it with its spine and the song banner showing. Tap or drag the card and it slides up over the player: the song list, the counter and a row of keys. Drag it down by its spine or the banner and it slips back. Everything else works as when closed: press ■ with the tape stopped and the card drops away, the player slides up and the tape box is underneath; tap the song title on the raised card to unfold the J-card. The page picks the pocket by the screen's shape, so it's the same app on both phones; the black shell's name tag reads PROPERTY OF SHAY on the pocket phone until PHONY asks for a name on install.
 
+## Getting it on your phone
+
+PHONY is free and open source, and it isn't in an app store. The newest build is always at
+
+https://github.com/hughhowey/phony/releases/download/latest/phony.apk
+
+Download it on the phone and open it to install (Android asks once to allow installs from your browser). Open PHONY, and the first time it asks whose player it is: that name goes on the black shell's tag.
+
+**The music.** Tap the title on the J-card (open the phone, or pull the card up on a tall phone) to choose. "Whatever is playing now" needs notification access, which PHONY opens the settings for; after that it follows Spotify, YouTube Music, podcasts, anything. Songs saved on the phone need no setup at all.
+
+**The tape box, the drawer and the mixtapes** come from Spotify, and they need a Spotify app of your own, because Spotify only serves a few accounts per app. It's five minutes:
+
+1. Go to developer.spotify.com/dashboard (Spotify Premium is required) and create an app. Call it anything.
+2. Redirect URI: `phony://callback`. APIs used: Web API and Android.
+3. Save, then open the app's Settings → User Management and add the Spotify account(s) that will use it (yours included if you log in to the dashboard with a different account).
+4. Copy the Client ID. In PHONY, press ■ with the tape stopped to open the box, tap the note in it, and paste the ID. Then tap the note again to sign in, once, in the browser.
+
+Spotify lets a development-mode app serve five accounts, and signs you out after six months; when that happens the note in the box says so and a tap signs you back in.
+
 ## Shells
 
 PHONY has seven shells: blue, black recorder, pink 80s, clear orange, silver digital, beat-up yellow and clear blush. There's no menu. Each shell hides a spot (a label, a sticker, a rubber band, a loose screw, a button); press and hold it for about a second and the next shell snaps on. A quick tap does nothing. The shell you land on stays.
@@ -79,5 +98,9 @@ Every push to `main` builds a signed APK and puts it at:
 https://github.com/hughhowey/phony/releases/download/latest/phony.apk
 
 Signing uses two repository secrets: `PHONY_KEYSTORE_BASE64` and `PHONY_KEYSTORE_PASSWORD`. Keep the same key forever; a different key means uninstalling before the next update installs.
+
+A third secret, `PHONY_SPOTIFY_CLIENT_ID`, bakes a Spotify client ID into the build so the phones that belong to that app never have to paste one. Without it, PHONY asks for an ID on the phone; an ID pasted on the phone always wins over the built-in one.
+
+PHONY is under the MIT licence (see LICENSE).
 
 Fonts are from Google Fonts under the SIL Open Font License (see `assets/fonts/licenses`).

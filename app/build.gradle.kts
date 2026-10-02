@@ -6,6 +6,8 @@ plugins {
 // Every GitHub build gets a higher number, so a new APK installs over the old one.
 val buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
 val keystorePath: String? = System.getenv("PHONY_KEYSTORE_FILE")
+// The Spotify app this build signs in as (a GitHub secret). Empty: PHONY asks for one on the phone.
+val spotifyClientId: String = System.getenv("PHONY_SPOTIFY_CLIENT_ID") ?: ""
 
 android {
     namespace = "com.hughhowey.phony"
@@ -17,6 +19,11 @@ android {
         targetSdk = 35
         versionCode = buildNumber
         versionName = "0.1.$buildNumber"
+        buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     signingConfigs {

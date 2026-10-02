@@ -87,7 +87,7 @@ let holdSkin = 0;
 function applySkin(){
   const k = SKINS[skinI];
   cover.dataset.skin = k.id; $('#inner').dataset.skin = k.id;
-  const named = h => (h || '').replaceAll('PROPERTY OF HUGH', 'PROPERTY OF ' + owner());
+  const named = h => (h || '').replaceAll('PROPERTY OF HUGH', ownerTag());
   deco.innerHTML = named(k.deco); odeco.innerHTML = named(k.odeco);
   // the hidden spot: one on the closed player, one on the open one
   $$('.secret-on').forEach(e => e.classList.remove('secret-on'));

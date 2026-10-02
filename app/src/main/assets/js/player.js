@@ -640,8 +640,7 @@ function layout(){
   requestAnimationFrame(() => { wins.forEach(sizeWin); markJList(); });
 }
 // (boot.js hooks layout to the window's resize, once every script is in)
-// whose player this is, written on the black shell. Until PHONY asks on install, the pocket phone is Shay's.
-function owner(){ return store.get('owner', null) || (S.mode === 'pocket' ? 'SHAY' : 'HUGH'); }
+// (whose player this is lives in setup.js: asked once, written on the black shell)
 
 /* ---------- the pocket: the J-card slides up over the player and back down ---------- */
 const pocketPx = () => innerWidth * WALK_H;   // how far down the card sits when it's in the pocket

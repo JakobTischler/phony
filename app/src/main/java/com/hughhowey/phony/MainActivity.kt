@@ -331,6 +331,8 @@ class MainActivity : ComponentActivity() {
         // ----- the tape box: albums saved in Spotify -----
         @JavascriptInterface fun spotifyStatus(): String = box.statusJson()
         @JavascriptInterface fun spotifyLogin() = onMain { box.startLogin() }
+        /** The Spotify app PHONY signs in as: paste the client ID of your own (see the README). */
+        @JavascriptInterface fun setSpotifyClientId(id: String) = onMain { box.setClientId(id) }
         @JavascriptInterface fun boxSync(force: Boolean) = box.sync(force)
         @JavascriptInterface fun getBox(): String = box.boxJson()
         @JavascriptInterface fun getCover(id: String): String = box.coverDataUrl(id)

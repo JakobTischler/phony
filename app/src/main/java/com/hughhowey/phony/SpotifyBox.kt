@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatcher, private val onChange: () -> Unit) {
 
     companion object {
-        const val CLIENT_ID = "e46b23f44fee4ddfb565d5a78ded8345"
         const val REDIRECT = "phony://callback"
         private const val SCOPES = "user-library-read user-modify-playback-state user-read-playback-state user-read-currently-playing " +
             "playlist-read-private playlist-read-collaborative user-read-recently-played playlist-modify-private"
@@ -40,6 +39,22 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     }
 
     private val prefs = ctx.getSharedPreferences("spotify", Context.MODE_PRIVATE)
+
+    /**
+     * Which Spotify app PHONY signs in as. Spotify only serves a handful of accounts per app, so
+     * everyone makes their own (five minutes on developer.spotify.com) and pastes its client ID
+     * here. A build can carry one of its own (PHONY_SPOTIFY_CLIENT_ID when the APK is made), which
+     * a pasted one overrides. Changing it signs the phone out: the saved key belonged to the old app.
+     */
+    val clientId: String get() = prefs.getString("clientId", null)?.takeIf { it.isNotBlank() } ?: BuildConfig.SPOTIFY_CLIENT_ID
+    val hasClientId get() = clientId.isNotBlank()
+    fun setClientId(id: String) {
+        val clean = id.trim().lowercase().filter { it in "0123456789abcdef" }
+        if (clean.isEmpty() || clean == clientId) return
+        signOut()
+        prefs.edit().putString("clientId", clean).apply()
+        onChange()
+    }
     private val boxFile = File(ctx.filesDir, "box.json")
     private val coverDir = File(ctx.filesDir, "covers").apply { mkdirs() }
     private val drawerFile = File(ctx.filesDir, "playlists.json")
@@ -67,6 +82,8 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     }
 
     fun statusJson(): String = JSONObject()
+        .put("hasClientId", hasClientId)
+        .put("clientId", clientId)
         .put("signedIn", signedIn)
         .put("state", state)
         .put("message", message)
@@ -85,13 +102,14 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     // ---------- signing in (PKCE, in the browser) ----------
 
     fun startLogin() {
+        if (!hasClientId) { tell("Paste a Spotify client ID first."); return }
         // each sign-in page gets its own key, so an older Spotify tab still works when you agree in it
         val verifier = randomString(64)
         val st = randomString(16)
         prefs.edit().putString("pkce_$st", verifier).putString("verifier", verifier).apply()
         val challenge = b64url(MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray()))
         val url = "https://accounts.spotify.com/authorize" +
-            "?response_type=code&client_id=$CLIENT_ID" +
+            "?response_type=code&client_id=$clientId" +
             "&scope=" + enc(SCOPES) +
             "&redirect_uri=" + enc(REDIRECT) +
             "&code_challenge_method=S256&code_challenge=$challenge&state=$st"
@@ -116,7 +134,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         tell("Signing in to Spotify…")
         Thread {
             try {
-                val j = token("grant_type=authorization_code&code=${enc(code)}&redirect_uri=${enc(REDIRECT)}&client_id=$CLIENT_ID&code_verifier=${enc(verifier)}")
+                val j = token("grant_type=authorization_code&code=${enc(code)}&redirect_uri=${enc(REDIRECT)}&client_id=$clientId&code_verifier=${enc(verifier)}")
                 saveTokens(j)
                 tell(if (canPlay) "Signed in. PHONY can now change what Spotify plays." else "Signed in, but Spotify didn't grant control of playback.")
                 syncNow()
@@ -134,7 +152,9 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
     fun tell(msg: String) { notice = msg; noticeId++; message = msg; onChange() }
 
     fun signOut() {
-        prefs.edit().clear().apply(); access = null; accessUntil = 0
+        val keep = prefs.getString("clientId", null)
+        prefs.edit().clear().apply(); keep?.let { prefs.edit().putString("clientId", it).apply() }
+        access = null; accessUntil = 0
         boxFile.delete(); drawerFile.delete(); state = "idle"; onChange()
     }
 
@@ -149,7 +169,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         access?.let { if (System.currentTimeMillis() < accessUntil) return it }
         val refresh = prefs.getString("refresh", null) ?: throw IllegalStateException("signed out")
         val j = try {
-            token("grant_type=refresh_token&refresh_token=${enc(refresh)}&client_id=$CLIENT_ID")
+            token("grant_type=refresh_token&refresh_token=${enc(refresh)}&client_id=$clientId")
         } catch (e: HttpError) {
             if (e.code == 400 || e.code == 401) prefs.edit().remove("refresh").apply()
             throw e
@@ -236,7 +256,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
             message = when {
                 !signedIn -> "Sign in to Spotify again."
                 // development mode: Spotify only serves the accounts listed under the app's users in the developer dashboard
-                e is HttpError && e.code == 403 -> "Spotify won't serve this account yet: add it to PHONY's users in the Spotify developer dashboard."
+                e is HttpError && e.code == 403 -> "Spotify won't serve this account on that app. Add it to the app's users in the developer dashboard, or paste your own app's client ID."
                 e is HttpError -> "Spotify said no (${e.message})."
                 else -> "Couldn't reach Spotify."
             }
@@ -485,7 +505,7 @@ class SpotifyBox(private val ctx: Context, private val remoteWatcher: RemoteWatc
         }
         remote?.let { r -> if (r.isConnected) { go(r); return } }
         if (!SpotifyAppRemote.isSpotifyInstalled(ctx)) { finish(false, "Spotify isn't installed"); return }
-        val params = ConnectionParams.Builder(CLIENT_ID).setRedirectUri(REDIRECT).showAuthView(true).build()
+        val params = ConnectionParams.Builder(clientId).setRedirectUri(REDIRECT).showAuthView(true).build()
         SpotifyAppRemote.connect(ctx, params, object : Connector.ConnectionListener {
             override fun onConnected(r: SpotifyAppRemote) { remote = r; go(r) }
             override fun onFailure(t: Throwable) { finish(false, t.javaClass.simpleName + " " + (t.message ?: "")) }

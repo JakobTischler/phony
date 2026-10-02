@@ -37,6 +37,8 @@ jobs:
       - name: Build the APK
         env:
           PHONY_KEYSTORE_PASSWORD: ${{ secrets.PHONY_KEYSTORE_PASSWORD }}
+          # the Spotify app this build signs in as; without it, PHONY asks for a client ID on the phone
+          PHONY_SPOTIFY_CLIENT_ID: ${{ secrets.PHONY_SPOTIFY_CLIENT_ID }}
         run: gradle :app:assembleRelease --no-daemon --stacktrace
 
       - name: Publish to the "latest" download link

@@ -17,6 +17,9 @@ readRadio(); ensureBlank();
 if (!N) window.phonyTestSeek = t => { S.t = t < 0 ? dur(S.idx) + t : t; };
 if (N) try { radioNoticeId = JSON.parse(N.radioNotice()).id; } catch (e) {}
 requestAnimationFrame(loop);
+// the first time: whose player is this (the black shell's tag)
+if ((N && !owner()) || new URLSearchParams(location.search).get('setup') === 'name') setTimeout(askOwner, 600);
+if (new URLSearchParams(location.search).get('setup') === 'spotify') setTimeout(openSpotifySetup, 600);
 // the pens' fonts only load when asked for, and the tapes are drawn on canvas, so ask
 const penFonts = ['"Permanent Marker"', '"Nothing You Could Do"', '"Rock Salt"', '700 1px Caveat', '"Gochi Hand"', '"Reenie Beanie"'];
 if (document.fonts) Promise.all(penFonts.map(f => document.fonts.load((/^\d/.test(f) ? f : '40px ' + f)).catch(() => {}))).then(() => document.fonts.ready).then(() => {

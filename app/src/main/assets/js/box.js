@@ -72,10 +72,10 @@ function drawerEl(){
   const dr = document.createElement('div'); dr.className = 'drawer';
   const dy = document.createElement('span'); dy.className = 'dymo'; dy.textContent = 'MIXES'; dr.append(dy);
   const grid = document.createElement('div'); grid.className = 'blanks'; dr.append(grid);
-  if (!N || boxStatus.signedIn) grid.append(blankEl());
+  if (!N || (boxStatus.signedIn && boxStatus.hasClientId)) grid.append(blankEl());
   const note = (text, onClick) => { const b = document.createElement('button'); b.className = 'case note'; b.innerHTML = '<span class="sp"><span class="hw"></span></span>'; b.querySelector('.hw').textContent = text; if (onClick) b.addEventListener('click', () => { ensureAudio(); sfx('tick'); onClick(); }); else b.disabled = true; return b; };
   if (N && boxStatus.signedIn && !boxStatus.canPlaylists){ grid.append(note('Tap here to let PHONY see your playlists.', () => N.spotifyLogin())); return dr; }
-  if (N && !boxStatus.signedIn) return null;
+  if (N && (!boxStatus.signedIn || !boxStatus.hasClientId)) return null;
   if (!PLAYLISTS.length){ grid.append(note(boxStatus.state === 'loading' ? 'Fetching your playlists…' : 'Play a playlist in Spotify and its tape lands here.')); return dr; }
   arranged().forEach(pl => {
     const lk = plLook(pl), b = document.createElement('button'); b.dataset.id = pl.id;
@@ -287,9 +287,14 @@ function caseEl(al, i){
 function statusCard(){
   const note = (text, onClick) => { const b = document.createElement('button'); b.className = 'case note'; b.innerHTML = '<span class="sp"><span class="hw"></span></span>'; b.querySelector('.hw').textContent = text; if (onClick) b.addEventListener('click', () => { ensureAudio(); sfx('tick'); onClick(); }); else b.disabled = true; return b; };
   if (!boxStatus.spotify && N) return note('Install Spotify to fill the box.');
+  if (N && !boxStatus.hasClientId) return note('Tap here to set up your Spotify app.', openSpotifySetup);
   if (!boxStatus.signedIn) return note('Sign in to Spotify to fill the box.', () => N.spotifyLogin());
   if (N && !boxStatus.canPlay) return note('Tap here to let PHONY change what Spotify plays.', () => N.spotifyLogin());
-  if (boxStatus.state === 'error' && !CASES.length) return note((boxStatus.message || 'Couldn\'t reach Spotify.') + ' Tap to try again.', () => { N.boxSync(true); });
+  if (boxStatus.state === 'error' && !CASES.length){
+    // refused for the account: the way out is a Spotify app of your own
+    if (/client ID/.test(boxStatus.message || '')) return note(boxStatus.message, openSpotifySetup);
+    return note((boxStatus.message || 'Couldn\'t reach Spotify.') + ' Tap to try again.', () => { N.boxSync(true); });
+  }
   if (!CASES.length && boxStatus.state === 'loading') return note('Fetching your albums…');
   if (!CASES.length) return note('Save an album in Spotify and it shows up here.', () => N.boxSync(true));
   return null;
