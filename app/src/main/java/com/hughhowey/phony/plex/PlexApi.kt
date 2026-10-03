@@ -13,7 +13,7 @@ internal data class PlexServer(val id: String, val name: String, val token: Stri
 internal data class PlexLibrary(val id: String, val name: String)
 internal class PlexHttpError(val status: Int) : IOException("Plex HTTP $status")
 
-internal class PlexApi(private val clientId: String) {
+internal class PlexApi(val clientId: String) {
     fun pin(): JSONObject = JSONObject(request("https://plex.tv/api/v2/pins", body = "strong=true"))
     fun checkPin(id: Long, code: String): JSONObject = JSONObject(request("https://plex.tv/api/v2/pins/$id?code=${encode(code)}"))
     fun authUrl(code: String) = "https://app.plex.tv/auth#?clientID=${encode(clientId)}&code=${encode(code)}&context%5Bdevice%5D%5Bproduct%5D=PHONY"

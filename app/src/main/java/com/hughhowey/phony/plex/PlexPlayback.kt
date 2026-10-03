@@ -8,6 +8,8 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
+import java.util.concurrent.Executors
 
 /** Process-local queue owned by the media service, not the Activity or WebView. */
 internal object PlexPlayback {
@@ -17,6 +19,11 @@ internal object PlexPlayback {
     private var autoReverse = false
     private var sideEnd = false
     private var flipped = false
+    private var endpoint: PlexEndpoint? = null
+    private var sessionId = ""
+    private var lastTimelineAt = 0L
+    private var lastTimelineState = ""
+    private val timelineWorker = Executors.newSingleThreadExecutor()
     @Volatile private var now = ""
     @Volatile private var streams = emptyMap<String, Pair<PlexEndpoint, String>>()
 
@@ -28,23 +35,27 @@ internal object PlexPlayback {
     fun attach(value: ExoPlayer) {
         player = value
         value.addListener(object : Player.Listener {
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { updateBoundary() }
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { updateBoundary(); reportTimeline(force = true) }
             override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) { sideEnd = false; flipped = false }
-                updateBoundary()
+                updateBoundary(); reportTimeline(force = true)
             }
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (!active()) return
                 if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) sideEnd = true
                 if (playWhenReady) { sideEnd = false; flipped = false }
+                reportTimeline(force = true)
             }
+            override fun onPlaybackStateChanged(playbackState: Int) { if (playbackState == Player.STATE_ENDED) reportTimeline(force = true) }
         })
     }
 
     fun start(value: PlexAlbum, songs: List<PlexTrack>, address: PlexEndpoint, reverse: Boolean): String {
         val p = player ?: error("Player is not ready")
+        reportTimeline(state = "stopped", force = true)
         p.pause()
-        album = value; tracks = songs; autoReverse = reverse; sideEnd = false; flipped = false
+        album = value; tracks = songs; endpoint = address; sessionId = UUID.randomUUID().toString(); lastTimelineAt = 0; lastTimelineState = ""
+        autoReverse = reverse; sideEnd = false; flipped = false
         val items = songs.map { song ->
             val id = "${value.id}:${song.id}"
             val uri = Uri.Builder().scheme("phony-plex").authority("track").appendPath(id).build()
@@ -54,7 +65,7 @@ internal object PlexPlayback {
         }
         streams = items.zip(songs).associate { (item, song) -> item.localConfiguration!!.uri.toString() to (address to song.part) }
         now = value.json().put("tracks", JSONArray(songs.map { it.json() })).toString()
-        p.setMediaItems(items); updateBoundary(); p.prepare(); p.play()
+        p.setMediaItems(items); updateBoundary(); p.prepare(); p.play(); reportTimeline(force = true)
         return now
     }
 
@@ -79,6 +90,7 @@ internal object PlexPlayback {
     fun state(): String? {
         if (!active()) return null
         val p = player ?: return null
+        reportTimeline()
         val duration = p.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0
         val error = p.playerError?.let {
             when (it.errorCode) {
@@ -93,9 +105,27 @@ internal object PlexPlayback {
     }
 
     fun clear() {
+        reportTimeline(state = "stopped", force = true)
         if (active()) { player?.stop(); player?.clearMediaItems() }
-        album = null; tracks = emptyList(); streams = emptyMap(); now = ""; sideEnd = false; flipped = false
+        album = null; tracks = emptyList(); endpoint = null; streams = emptyMap(); now = ""; sideEnd = false; flipped = false
         player?.pauseAtEndOfMediaItems = false
     }
     fun detach() { clear(); player = null }
+
+    private fun reportTimeline(state: String? = null, force: Boolean = false) {
+        val p = player ?: return
+        val address = endpoint ?: return
+        val track = tracks.getOrNull(p.currentMediaItemIndex) ?: return
+        val now = System.currentTimeMillis()
+        val currentState = state ?: when {
+            p.playbackState == Player.STATE_ENDED -> "stopped"
+            p.isPlaying || (p.playWhenReady && p.playbackState == Player.STATE_BUFFERING) -> "playing"
+            else -> "paused"
+        }
+        if (!force && currentState == lastTimelineState && now - lastTimelineAt < 10_000) return
+        lastTimelineAt = now; lastTimelineState = currentState
+        val duration = p.duration.takeIf { it != C.TIME_UNSET && it > 0 } ?: track.duration
+        val event = PlexTimeline.Event(address, track, currentState, p.currentPosition, duration, sessionId)
+        timelineWorker.execute { PlexTimeline.send(event) }
+    }
 }

@@ -7,7 +7,7 @@ import java.net.URI
 internal data class PlexSelection(val accountToken: String, val serverId: String, val libraryId: String) {
     val key get() = "$serverId/$libraryId"
 }
-internal data class PlexEndpoint(val url: String, val token: String)
+internal data class PlexEndpoint(val url: String, val token: String, val clientId: String = "")
 internal data class PlexAlbum(val id: String, val title: String, val artist: String, val year: String, val thumb: String) {
     fun json() = JSONObject().put("id", id).put("title", title).put("artist", artist).put("year", year).put("provider", "plex")
         .put("cover", if (thumb.isBlank()) "" else "https://appassets.androidplatform.net/plex-art/${PlexMusic.artKey(id, thumb)}")

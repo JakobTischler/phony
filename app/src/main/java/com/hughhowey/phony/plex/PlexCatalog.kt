@@ -56,7 +56,7 @@ internal class PlexCatalog(context: Context, private val changed: () -> Unit) {
         for (url in server.connections) {
             if (closed || Thread.currentThread().isInterrupted) throw InterruptedException()
             try {
-                if (api.libraries(url, server.token).any { it.id == selection.libraryId }) return PlexEndpoint(url, server.token)
+                if (api.libraries(url, server.token).any { it.id == selection.libraryId }) return PlexEndpoint(url, server.token, api.clientId)
             } catch (_: Exception) { }
         }
         error("Music library is not reachable")
