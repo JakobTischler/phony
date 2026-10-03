@@ -19,6 +19,11 @@ class PlexMusicTest {
         assertFalse(empty.more)
     }
 
+    @Test fun `search query is trimmed normalized and bounded`() {
+        assertEquals("Miles Davis", PlexMusic.searchQuery("  Miles   Davis  "))
+        assertEquals(120, PlexMusic.searchQuery("x".repeat(121)).length)
+    }
+
     @Test(expected = IllegalArgumentException::class) fun `off-server stream addresses are rejected`() {
         PlexMusic.url("https://server.example", "//attacker.example/library/parts/1")
     }

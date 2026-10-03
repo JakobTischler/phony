@@ -39,6 +39,11 @@ const server = http.createServer((req, res) => {
             window.catalogMock = {...window.catalogMock, albums:more ? [album,second] : [album], more:!more, error:''};
             setTimeout(() => window.phonyPlexCatalogChanged(), 0);
           },
+          plexSearch: query => {
+            const result = {...album, id:'plex:server/1:12', title:'Search result', artist:query || 'Test artist'};
+            window.catalogMock = {...window.catalogMock, albums:query ? [result] : [album], query, more:false, error:''};
+            setTimeout(() => window.phonyPlexCatalogChanged(), 0);
+          },
           plexPlayAlbum: id => {
             window.nowMock = {...album, id, tracks:songs};
             localStorage.setItem('test.now', JSON.stringify(window.nowMock));
@@ -67,6 +72,11 @@ const server = http.createServer((req, res) => {
       await bay.getByRole('button', {name:'Test album by Test artist', exact:true}).waitFor();
       await bay.getByRole('button', {name:'MORE ALBUMS', exact:true}).click();
       await bay.getByRole('button', {name:'Second album by Test artist', exact:true}).waitFor();
+      await bay.getByPlaceholder('Search albums or artists').fill('Miles');
+      await bay.getByRole('button', {name:'SEARCH', exact:true}).click();
+      await bay.getByRole('button', {name:'Search result by Miles', exact:true}).waitFor();
+      await bay.getByRole('button', {name:'CLEAR', exact:true}).click();
+      await bay.getByRole('button', {name:'Test album by Test artist', exact:true}).waitFor();
       await bay.getByRole('button', {name:'Test album by Test artist', exact:true}).click();
       await page.getByRole('button', {name:'Open the case and play Test album', exact:true}).click();
       await page.waitForFunction(() => S.src.kind === 'plex' && S.tracks.length === 4);

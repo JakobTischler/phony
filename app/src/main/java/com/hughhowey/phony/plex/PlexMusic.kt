@@ -19,6 +19,7 @@ internal data class PlexPage<T>(val items: List<T>, val next: Int, val more: Boo
 
 internal object PlexMusic {
     const val PAGE_SIZE = 50
+    fun searchQuery(value: String) = value.trim().replace(Regex("\\s+"), " ").take(120)
     fun artKey(id: String, thumb: String) = java.security.MessageDigest.getInstance("SHA-256").digest((id + thumb).toByteArray()).joinToString("") { "%02x".format(it) }
     fun albums(data: JSONObject, offset: Int): PlexPage<PlexAlbum> {
         val container = data.getJSONObject("MediaContainer")
@@ -29,8 +30,8 @@ internal object PlexMusic {
             else PlexAlbum(a.getString("ratingKey"), a.optString("title", "Untitled album"), a.optString("parentTitle"),
                 if (a.optInt("year") > 0) a.optInt("year").toString() else "", a.optString("thumb"))
         }
-        val next = offset + items.length()
         if (container.has("offset") && container.getInt("offset") != offset) error("Unexpected Plex page")
+        val next = offset + items.length()
         val more = items.length() > 0 && if (container.has("totalSize")) next < container.getInt("totalSize") else items.length() >= PAGE_SIZE
         return PlexPage(albums, next, more)
     }

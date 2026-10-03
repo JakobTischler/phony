@@ -20,14 +20,22 @@ internal class PlexApi(private val clientId: String) {
     fun servers(token: String): List<PlexServer> = parseServers(JSONArray(request(
         "https://plex.tv/api/v2/resources?includeHttps=1&includeRelay=1", token)))
     fun libraries(url: String, token: String): List<PlexLibrary> = parseLibraries(JSONObject(request("$url/library/sections", token)))
-    fun albums(endpoint: PlexEndpoint, libraryId: String, offset: Int): PlexPage<PlexAlbum> = PlexMusic.albums(JSONObject(request(
-        "${endpoint.url}/library/sections/${encode(libraryId)}/all?type=9&sort=artist.titleSort:asc,album.titleSort:asc&X-Plex-Container-Start=$offset&X-Plex-Container-Size=${PlexMusic.PAGE_SIZE}", endpoint.token)), offset)
+    fun albums(endpoint: PlexEndpoint, libraryId: String, offset: Int, query: String = ""): PlexPage<PlexAlbum> {
+        // `/all?query=` is silently ignored by some PMS versions. The section search
+        // route is the library's actual search pivot and supports matching artists too.
+        val path = if (query.isBlank()) "/library/sections/${encode(libraryId)}/all?type=9&sort=artist.titleSort:asc,album.titleSort:asc"
+        else "/library/sections/${encode(libraryId)}/search?type=9&query=${encode(query)}"
+        return PlexMusic.albums(JSONObject(request(
+            endpoint.url + path,
+            endpoint.token, headers = pageHeaders(offset, PlexMusic.PAGE_SIZE))), offset)
+    }
 
     fun tracks(endpoint: PlexEndpoint, album: PlexAlbum): List<PlexTrack> {
         val all = mutableListOf<PlexTrack>()
         var offset = 0
         do {
-            val data = JSONObject(request("${endpoint.url}/library/metadata/${encode(album.id)}/children?X-Plex-Container-Start=$offset&X-Plex-Container-Size=200", endpoint.token))
+            val data = JSONObject(request("${endpoint.url}/library/metadata/${encode(album.id)}/children", endpoint.token,
+                headers = pageHeaders(offset, 200)))
             val container = data.getJSONObject("MediaContainer")
             if (container.has("offset")) require(container.getInt("offset") == offset)
             val tracks = PlexMusic.tracks(data, album)
@@ -52,7 +60,7 @@ internal class PlexApi(private val clientId: String) {
         } finally { c.disconnect() }
     }
 
-    private fun request(url: String, token: String = "", body: String? = null): String {
+    private fun request(url: String, token: String = "", body: String? = null, headers: Map<String, String> = emptyMap()): String {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.connectTimeout = 5000
@@ -65,6 +73,7 @@ internal class PlexApi(private val clientId: String) {
             c.setRequestProperty("X-Plex-Platform", "Android")
             c.setRequestProperty("X-Plex-Client-Identifier", clientId)
             if (token.isNotEmpty()) c.setRequestProperty("X-Plex-Token", token)
+            headers.forEach { (name, value) -> c.setRequestProperty(name, value) }
             if (body != null) {
                 c.requestMethod = "POST"
                 c.doOutput = true
@@ -78,6 +87,10 @@ internal class PlexApi(private val clientId: String) {
 
     companion object {
         private fun encode(s: String) = URLEncoder.encode(s, "UTF-8")
+        private fun pageHeaders(offset: Int, size: Int) = mapOf(
+            "X-Plex-Container-Start" to offset.toString(),
+            "X-Plex-Container-Size" to size.toString()
+        )
         fun parseServers(data: JSONArray): List<PlexServer> = (0 until data.length()).mapNotNull { i ->
             val s = data.getJSONObject(i)
             if ("server" !in s.optString("provides").split(',').map { it.trim() }) return@mapNotNull null

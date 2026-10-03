@@ -131,6 +131,17 @@ function plexBoxStatusCard(){
 }
 function appendPlexMore(host){
   if (!plexStatus().selection) return;
+  const search = el('form', 'plexsearch'); search.setAttribute('role', 'search');
+  const input = el('input', ''); input.type = 'search'; input.maxLength = 120; input.autocomplete = 'off'; input.spellcheck = false;
+  input.placeholder = 'Search albums or artists'; input.value = plexCatalogState.query || '';
+  const submit = el('button', '', 'SEARCH'); submit.type = 'submit'; submit.disabled = plexCatalogState.loading;
+  search.addEventListener('submit', event => { event.preventDefault(); N.plexSearch(input.value); });
+  search.append(input, submit);
+  if (plexCatalogState.query){
+    const clear = el('button', '', 'CLEAR'); clear.type = 'button'; clear.disabled = plexCatalogState.loading;
+    clear.addEventListener('click', () => N.plexSearch('')); search.append(clear);
+  }
+  host.append(search);
   const bar = el('div', 'boxsources');
   if (plexCatalogState.more){
     const more = el('button', '', plexCatalogState.loading ? 'LOADING…' : 'MORE ALBUMS'); more.disabled = plexCatalogState.loading;

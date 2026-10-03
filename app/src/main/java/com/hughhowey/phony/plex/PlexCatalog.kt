@@ -26,6 +26,7 @@ internal class PlexCatalog(context: Context, private val changed: () -> Unit) {
     @Volatile private var closed = false
     private var playVersion = 0
     private var offset = 0
+    private var query = ""
     private var more = false
     private var loading = false
     private var error = ""
@@ -35,14 +36,14 @@ internal class PlexCatalog(context: Context, private val changed: () -> Unit) {
     fun configure(selection: PlexSelection?) {
         if (selection == selected) return
         generation++; cancelPlay(); selected = selection; endpoint = null; albums = emptyList()
-        offset = 0; more = false; loading = false; error = ""
+        offset = 0; query = ""; more = false; loading = false; error = ""
         if (selection == null || !PlexPlayback.belongsTo(selection.key)) PlexPlayback.clear()
         publish()
     }
     fun cancelPlay() { playVersion++ }
     private fun publish() {
         val selection = selected
-        snapshot = JSONObject().put("key", selection?.key.orEmpty()).put("loading", loading).put("more", more)
+        snapshot = JSONObject().put("key", selection?.key.orEmpty()).put("query", query).put("loading", loading).put("more", more)
             .put("error", error).put("albums", JSONArray(albums.map { album ->
                 album.copy(id = identity(selection!!, album.id)).json().put("ratingKey", album.id)
             })).toString()
@@ -75,18 +76,35 @@ internal class PlexCatalog(context: Context, private val changed: () -> Unit) {
         val start = if (reset) 0 else offset
         loading = true; error = ""; publish()
         worker.execute {
-            val result = runCatching { request(selection) { api.albums(it, selection.libraryId, start) } }
+            val search = query
+            val result = runCatching { request(selection) { api.albums(it, selection.libraryId, start, search) } }
             main.post {
                 if (closed || version != generation) return@post
                 loading = false
                 result.onSuccess { (address, page) ->
                     endpoint = address
-                    albums = ((if (reset) emptyList() else albums) + page.items).distinctBy { it.id }
-                    offset = page.next; more = page.more
+                    val before = if (reset) emptyList() else albums
+                    val combined = (before + page.items).distinctBy { it.id }
+                    // A proxy that ignores the requested page would otherwise make the box appear
+                    // to loop through its first albums forever.
+                    val advanced = page.next > start
+                    val added = combined.size > before.size
+                    albums = combined
+                    offset = page.next
+                    more = page.more && advanced && (reset || added)
+                    if (!reset && page.items.isNotEmpty() && !added) error = "Plex returned the same album page. Refresh the tape box to try again."
                 }.onFailure { error = "Could not load Plex albums. Check your server and connection, then retry." }
                 publish()
             }
         }
+    }
+
+    fun search(value: String) {
+        val normalized = PlexMusic.searchQuery(value)
+        if (normalized == query || selected == null || closed) return
+        generation++; cancelPlay(); query = normalized; albums = emptyList(); offset = 0; more = false; loading = false; error = ""
+        publish()
+        load(true)
     }
 
     fun play(id: String, done: (PlexAlbum?, List<PlexTrack>, PlexEndpoint?, String) -> Unit) {

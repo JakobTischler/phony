@@ -269,6 +269,7 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun plexSignOut() = onMain { plex.signOut() }
         @JavascriptInterface fun plexCatalog(): String = plexCatalog.status()
         @JavascriptInterface fun plexAlbums(reset: Boolean) = onMain { plexCatalog.load(reset) }
+        @JavascriptInterface fun plexSearch(query: String) = onMain { plexCatalog.search(query) }
         @JavascriptInterface fun plexNow(): String = com.hughhowey.phony.plex.PlexPlayback.nowJson()
         @JavascriptInterface fun plexAutoReverse(on: Boolean) = onMain { com.hughhowey.phony.plex.PlexPlayback.setAutoReverse(on) }
         @JavascriptInterface fun plexFlip() = onMain { com.hughhowey.phony.plex.PlexPlayback.flip() }
