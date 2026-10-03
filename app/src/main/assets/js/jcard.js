@@ -8,6 +8,8 @@ const plainSong = t => (t || '').replace(/\s*[(\[][^)\]]*[)\]]/g, '').replace(/\
 function ctxAlbumUri(album){ const cx = spotifyCtx(); return cx && cx.albumUri && album && sameName(cx.album, album) ? cx.albumUri : ''; }
 // the album the current song comes from, and whatever PHONY already knows about it
 function nowAlbum(){
+  if (isPlex()) return {provider:'plex', uri:S.src.id, title:S.src.title, artist:S.src.artist, year:S.src.year,
+    img:ALBUM.img, tracks:S.tracks.map(t => ({t:t.title, d:t.dur, disc:t.disc}))};
   if (S.mix) return {mix:S.mix, title:'Mixtape ' + S.mix.id, artist:''};
   const tr = S.tracks[S.idx] || {};
   if (S.tape === ALBUM_TAPE && ALBUM.title){
@@ -19,7 +21,7 @@ function nowAlbum(){
   const album = tr.album || '';
   return {title:album, artist:tr.artist || '', img:album && sameName(album, ALBUM.title) ? ALBUM.img : null, uri:ctxAlbumUri(album), tracks:null, year:''};
 }
-const albumKey = al => ((al.title || '?') + '|' + (al.artist || '')).toLowerCase();
+const albumKey = al => al.provider === 'plex' ? al.uri : ((al.title || '?') + '|' + (al.artist || '')).toLowerCase();
 function openFold(){
   if (!S.open || foldOpen || (typeof cardSettling === 'function' && cardSettling())) return;
   ensureAudio();
@@ -37,6 +39,10 @@ function closeFold(){
 }
 function askNotes(al){
   const key = albumKey(al);
+  if (al.provider === 'plex'){
+    notesCache[key] = {title:al.title, artist:al.artist, date:al.year, tracks:al.tracks};
+    foldNotes = notesCache[key]; buildFold(al); return;
+  }
   if (!N){ setTimeout(() => { notesCache[key] = demoNotes(al); if (foldOpen && key === foldKey){ foldNotes = notesCache[key]; buildFold(foldAl); } }, 700); return; }
   if (!al.title && !al.artist){ notesCache[key] = {}; foldNotes = {}; buildFold(al); return; }
   const id = 'n' + (++foldReq); pending[id] = key; N.fetchNotes(id, al.title || '', al.artist || '', al.uri || '');
@@ -195,6 +201,10 @@ function syncWords(){
 function pickFromCard(pos, t, n, al){
   if (performance.now() - swipedAt < 350) return;
   ensureAudio(); sfx('key');
+  if (isPlex()){
+    if (S.ejected) insert(S.tape);
+    loadTrack(pos, true); if (!S.playing){ play(); syncKeys(); } return;
+  }
   const want = plainSong(t.t), i = S.tracks.findIndex(x => plainSong(x.title) === want);
   if (isRemote()){
     const q = i >= 0 ? S.tracks[i].queueId : null;
@@ -212,7 +222,7 @@ function seekTo(sec){
   ensureAudio(); sfx('tick'); foldTouchAt = 0;
   S.t = Math.max(0, sec - .2); S.cmdAt = performance.now();
   if (isRemote()) N.remoteCmd('seek', String(Math.round(S.t * 1000)));
-  else if (isLocal()) N.seekTo(Math.round(S.t * 1000));
+  else if (isNative()) N.seekTo(Math.round(S.t * 1000));
   else if (S.src.kind === 'files') audio.currentTime = S.t;
 }
 let swipedAt = 0;

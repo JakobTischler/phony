@@ -42,6 +42,10 @@ class PlexConnection(context: Context, private val changed: () -> Unit, private 
 
     fun status(): String = snapshot
 
+    internal fun musicSelection(): PlexSelection? = selection?.takeIf { token.isNotEmpty() }?.let {
+        PlexSelection(token, it.getString("serverId"), it.getString("libraryId"))
+    }
+
     private fun publish() {
         snapshot = JSONObject().put("state", state).put("busy", busy).put("message", message)
             .put("signedIn", token.isNotEmpty())

@@ -22,6 +22,9 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         val player = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(
+                androidx.media3.datasource.DefaultDataSource.Factory(this) { com.hughhowey.phony.plex.PlexStreamDataSource() }
+            ))
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -30,7 +33,10 @@ class PlaybackService : MediaSessionService() {
                 /* handleAudioFocus = */ true
             )
             .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
+
+        com.hughhowey.phony.plex.PlexPlayback.attach(player)
 
         val open = packageManager.getLaunchIntentForPackage(packageName)
         val openPending = PendingIntent.getActivity(
@@ -67,6 +73,7 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        com.hughhowey.phony.plex.PlexPlayback.detach()
         session?.run {
             player.release()
             release()

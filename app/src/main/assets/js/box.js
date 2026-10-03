@@ -193,9 +193,13 @@ function loadCovers(){
   if (!N) return;
   CASES.forEach(al => {
     if (al.img || al.imgTried === 2) return;
-    const src = N.getCover(al.id); if (!src){ al.imgTried = 1; return; }
+    const src = al.provider === 'plex' ? al.cover : N.getCover(al.id); if (!src){ al.imgTried = 1; return; }
     al.imgTried = 2;
-    const im = new Image(); im.onload = () => { al.img = im; al.pal = paletteFrom(im); Object.keys(artCache).forEach(k => { if (k.startsWith(al.id)) delete artCache[k]; }); rerenderSoon(); }; im.src = src;
+    const im = new Image(); im.onload = () => {
+      al.img = im; al.pal = paletteFrom(im);
+      if (al.provider === 'plex' && isPlex() && S.src.id === al.id){ ALBUM.img = im; refreshShells(); tapeChanged(); }
+      Object.keys(artCache).forEach(k => { if (k.startsWith(al.id)) delete artCache[k]; }); rerenderSoon();
+    }; im.onerror = () => { al.imgTried = 1; }; im.src = src;
   });
 }
 let rerenderT = 0;
@@ -204,6 +208,7 @@ const boxVisible = () => $('.lid').classList.contains('boxopen') || $('#cover').
 let lastNotice = -1;
 function readBox(){
   if (!N) return;
+  if (typeof plexBoxActive === 'function' && plexBoxActive()){ readPlexBox(); return; }
   try { boxStatus = JSON.parse(N.spotifyStatus()); } catch (e) {}
   if (lastNotice < 0) lastNotice = boxStatus.noticeId || 0;
   else if (boxStatus.noticeId && boxStatus.noticeId !== lastNotice){ lastNotice = boxStatus.noticeId; if (boxStatus.notice) toast(boxStatus.notice); }
@@ -285,6 +290,7 @@ function caseEl(al, i){
   return b;
 }
 function statusCard(){
+  if (typeof plexBoxActive === 'function' && plexBoxActive()) return plexBoxStatusCard();
   const note = (text, onClick) => { const b = document.createElement('button'); b.className = 'case note'; b.innerHTML = '<span class="sp"><span class="hw"></span></span>'; b.querySelector('.hw').textContent = text; if (onClick) b.addEventListener('click', () => { ensureAudio(); sfx('tick'); onClick(); }); else b.disabled = true; return b; };
   if (!boxStatus.spotify && N) return note('Install Spotify to fill the box.');
   if (N && !boxStatus.hasClientId) return note('Tap here to set up your Spotify app.', openSpotifySetup);
@@ -303,6 +309,7 @@ function renderBox(bay, fresh){
   const keep = bay.scrollTop;
   inPlayer = currentCaseId();
   const wrap = document.createElement('div'); wrap.className = 'boxes';
+  if (typeof appendBoxSources === 'function') appendBoxSources(wrap);
   const sc = statusCard();
   const items = sc && boxStatus.signedIn && CASES.length ? [sc, ...CASES] : (sc ? [sc] : CASES);
   const n = Math.max(1, Math.ceil(items.length / PER_BOX)) + (items.length % PER_BOX === 0 ? 1 : 0);
@@ -320,8 +327,10 @@ function renderBox(bay, fresh){
     box.append(sl); wrap.append(box);
   }
   // the finished mixtapes, spine out, then the drawer of playlist tapes
-  const mb = mixBoxEl(fresh); if (mb) wrap.append(mb);
-  const dr = drawerEl(); if (dr) wrap.append(dr);
+  if (!(typeof plexBoxActive === 'function' && plexBoxActive())){
+    const mb = mixBoxEl(fresh); if (mb) wrap.append(mb);
+    const dr = drawerEl(); if (dr) wrap.append(dr);
+  } else appendPlexMore(wrap);
   bay.innerHTML = ''; bay.append(wrap); bay.scrollTop = keep;
 }
 function renderBoxes(fresh){ $$('.boxbay').forEach(bay => renderBox(bay, fresh)); }
@@ -360,6 +369,7 @@ function showCase(al, bay){
   });
 }
 function loadFromBox(al){
+  if (al.provider === 'plex'){ loadPlexAlbum(al); return; }
   newTape(); S.boxAlbum = {id:al.id, title:al.title}; S.playlist = null; S.ctxHold = performance.now() + 9000; S.expect = S.r.key || null;
   if (N){
     N.playAlbum(al.uri, al.title);
@@ -383,7 +393,7 @@ function loadFromBox(al){
 }
 function showBox(){
   readRadio();
-  if (N){ readBox(); N.boxSync(false); }
+  if (N){ readBox(); if (typeof plexBoxActive === 'function' && plexBoxActive()) N.plexAlbums(false); else N.boxSync(false); }
   renderBoxes();
   // in the pocket the card drops out of the way and the box is under the player, as when closed
   if (S.mode === 'pocket'){ cardTo(false); inner.classList.add('away'); }

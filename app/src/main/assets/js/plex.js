@@ -11,6 +11,7 @@ function appendPlexSource(host){
   host.append(row(selected ? selected.libraryName : 'Connect to Plex',
     selected ? selected.serverName + ' · Manage connection' : 'Sign in and choose your music library.',
     () => { closeSheet(); openPlexSetup(); }));
+  if (selected) host.append(row('Browse Plex albums', selected.libraryName + ' · Open the tape box', () => { closeSheet(); openPlexBox(); }));
 }
 function openPlexSetup(){
   if ($('.setup') || !N) return;
@@ -60,7 +61,8 @@ function renderPlexSetup(){
     button('CHECK SIGN-IN', () => N.plexCheckLogin(), 'check', p.busy);
   } else if (p.state === 'ready' && p.selection){
     text(p.selection.libraryName + ' · ' + p.selection.serverName);
-    text('Library saved. Plex browsing and playback are coming next.');
+    text('Library saved. Open the tape box to choose an album.');
+    button('OPEN TAPE BOX', () => { plexCard.close(); openPlexBox(); }, 'browse');
     button('CHANGE SERVER OR LIBRARY', () => N.plexServers(), 'servers', p.busy);
   } else if (p.state === 'libraries'){
     text('Choose a music library on ' + p.serverName + '.');
@@ -90,3 +92,107 @@ window.phonyPlexChanged = () => {
   renderPlexSetup();
   if (!sheet.hidden) openSheet();
 };
+
+/* Plex albums use the existing cassette cases, with a separately selected box source. */
+let plexCatalogState = {albums:[], loading:false, more:false, error:''};
+let pendingPlexAlbum = null, plexPlaybackError = '';
+function plexBoxActive(){ return !!N && !!N.plexCatalog && store.get('boxProvider', 'spotify') === 'plex'; }
+function openPlexBox(){
+  store.set('boxProvider', 'plex'); showBox();
+}
+function readPlexBox(){
+  try { plexCatalogState = JSON.parse(N.plexCatalog()); } catch (_) { }
+  const old = new Map(CASES.map(a => [a.id, a]));
+  CASES = sortCases((plexCatalogState.albums || []).map(a => Object.assign(old.get(a.id) || {pal:NEUTRAL, tracks:[]}, a)));
+  boxStatus = {signedIn:!!plexStatus().selection, state:plexCatalogState.loading ? 'loading' : 'ready'};
+  loadCovers();
+}
+function appendBoxSources(host){
+  if (!N || !N.plexCatalog) return;
+  const bar = el('div', 'boxsources'); bar.setAttribute('aria-label', 'Tape box source');
+  for (const [value, label] of [['plex', 'PLEX'], ['spotify', 'SPOTIFY']]){
+    const button = el('button', '', label);
+    button.setAttribute('aria-pressed', String(plexBoxActive() === (value === 'plex')));
+    button.addEventListener('click', () => { store.set('boxProvider', value); showBox(); }); bar.append(button);
+  }
+  host.append(bar);
+}
+function plexBoxStatusCard(){
+  let text = '', action = null;
+  if (!plexStatus().selection){ text = 'Connect to Plex to fill this box.'; action = openPlexSetup; }
+  else if (plexCatalogState.error){ text = plexCatalogState.error; action = () => N.plexAlbums(true); }
+  else if (!CASES.length){
+    text = plexCatalogState.loading ? 'Fetching your Plex albums…' : 'No albums found. Tap to refresh.';
+    if (!plexCatalogState.loading) action = () => N.plexAlbums(true);
+  }
+  if (!text) return null;
+  const b = el('button', 'case note'), sp = el('span', 'sp'); sp.append(el('span', 'hw', text)); b.append(sp);
+  b.disabled = !action; if (action) b.addEventListener('click', action); return b;
+}
+function appendPlexMore(host){
+  if (!plexStatus().selection) return;
+  const bar = el('div', 'boxsources');
+  if (plexCatalogState.more){
+    const more = el('button', '', plexCatalogState.loading ? 'LOADING…' : 'MORE ALBUMS'); more.disabled = plexCatalogState.loading;
+    more.addEventListener('click', () => N.plexAlbums(false)); bar.append(more);
+  }
+  const refresh = el('button', '', 'REFRESH'); refresh.disabled = plexCatalogState.loading;
+  refresh.addEventListener('click', () => N.plexAlbums(true)); bar.append(refresh); host.append(bar);
+}
+window.phonyPlexCatalogChanged = () => {
+  if (plexBoxActive()){ readPlexBox(); if (boxVisible()) renderBoxes(); }
+  if (isPlex() && !N.plexNow()){
+    pendingPlexAlbum = null; chooseSource({kind:'demo'}); toast('Plex library changed. Choose an album from the tape box.');
+  }
+};
+function loadPlexAlbum(album){
+  pause(); syncKeys(); pendingPlexAlbum = album; plexPlaybackError = '';
+  toast('Loading ' + album.title + '…');
+  N.plexPlayAlbum(album.id, autoReverse());
+}
+window.phonyPlexAlbum = (raw, error) => {
+  if (!raw){ pendingPlexAlbum = null; if (error) toast(error); return; }
+  let album; try { album = JSON.parse(raw); } catch (_) { return; }
+  const art = pendingPlexAlbum; pendingPlexAlbum = null;
+  applyPlexAlbum(album, art, false);
+};
+function applyPlexAlbum(album, cover, restoring){
+  if (!album.tracks || !album.tracks.length) return;
+  newTape(); S.cue = 0; S.mix = null; S.rec = null; S.playlist = null;
+  S.src = {kind:'plex', id:album.id, title:album.title, artist:album.artist, year:album.year};
+  store.set('src', S.src);
+  S.boxAlbum = {id:album.id, title:album.title}; S.albumMode = true;
+  S.tracks = album.tracks; S.idx = 0; S.t = 0; S.dispP = 0;
+  S.playing = !restoring; S.cmdAt = restoring ? 0 : performance.now(); S.startAt = performance.now();
+  ALBUM.title = album.title; ALBUM.artist = album.artist; ALBUM.key = album.id;
+  ALBUM.img = cover ? (cover.img || art(cover, 880, 880)) : null;
+  if (!cover && album.cover){
+    const img = new Image(); img.onload = () => {
+      if (isPlex() && S.src.id === album.id){ ALBUM.img = img; refreshShells(); tapeChanged(); }
+    }; img.src = album.cover;
+  }
+  S.tape = ALBUM_TAPE;
+  if (!restoring) insert(ALBUM_TAPE);
+  renderJList(); trackChanged(); tapeChanged(); syncKeys(); renderBoxes();
+}
+function restorePlexPlayback(){
+  if (!N || !N.plexNow) return;
+  try { const raw = N.plexNow(); if (raw) applyPlexAlbum(JSON.parse(raw), null, true); } catch (_) { }
+}
+function syncPlexState(st){
+  if (st.plexId !== S.src.id) return false;
+  if (performance.now() - S.cmdAt > 200){
+    const side = st.flipped || st.index >= half() ? 'B' : 'A';
+    if (S.sideEnd !== !!st.sideEnd || S.flipped !== !!st.flipped || S.side !== side){
+      S.sideEnd = !!st.sideEnd; S.flipped = !!st.flipped; S.side = side;
+      refreshShells(); trackChanged(); tapeChanged();
+    }
+  }
+  if (st.error && st.error !== plexPlaybackError) toast(st.error);
+  plexPlaybackError = st.error || '';
+  const label = st.error ? 'PLAYBACK ERROR · PRESS ▶ TO RETRY' : st.buffering ? 'BUFFERING FROM PLEX…' : '';
+  if (label) $('#nowlabel').textContent = label;
+  else if (S.plexNotice){ trackChanged(); }
+  S.plexNotice = !!label;
+  return true;
+}

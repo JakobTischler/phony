@@ -20,6 +20,37 @@ internal class PlexApi(private val clientId: String) {
     fun servers(token: String): List<PlexServer> = parseServers(JSONArray(request(
         "https://plex.tv/api/v2/resources?includeHttps=1&includeRelay=1", token)))
     fun libraries(url: String, token: String): List<PlexLibrary> = parseLibraries(JSONObject(request("$url/library/sections", token)))
+    fun albums(endpoint: PlexEndpoint, libraryId: String, offset: Int): PlexPage<PlexAlbum> = PlexMusic.albums(JSONObject(request(
+        "${endpoint.url}/library/sections/${encode(libraryId)}/all?type=9&sort=artist.titleSort:asc,album.titleSort:asc&X-Plex-Container-Start=$offset&X-Plex-Container-Size=${PlexMusic.PAGE_SIZE}", endpoint.token)), offset)
+
+    fun tracks(endpoint: PlexEndpoint, album: PlexAlbum): List<PlexTrack> {
+        val all = mutableListOf<PlexTrack>()
+        var offset = 0
+        do {
+            val data = JSONObject(request("${endpoint.url}/library/metadata/${encode(album.id)}/children?X-Plex-Container-Start=$offset&X-Plex-Container-Size=200", endpoint.token))
+            val container = data.getJSONObject("MediaContainer")
+            if (container.has("offset")) require(container.getInt("offset") == offset)
+            val tracks = PlexMusic.tracks(data, album)
+            all.addAll(tracks)
+            offset += tracks.size
+        } while (tracks.isNotEmpty() && offset < container.optInt("totalSize", offset))
+        return all.sortedWith(compareBy({ it.disc }, { it.number }))
+    }
+
+    fun image(endpoint: PlexEndpoint, path: String): ByteArray {
+        val c = URL(PlexMusic.url(endpoint.url, path)).openConnection() as HttpURLConnection
+        try {
+            c.connectTimeout = 5000; c.readTimeout = 10000; c.instanceFollowRedirects = false
+            c.setRequestProperty("X-Plex-Token", endpoint.token)
+            if (c.responseCode !in 200..299) throw PlexHttpError(c.responseCode)
+            return c.inputStream.use { input ->
+                val out = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (true) { val n = input.read(buffer); if (n < 0) break; require(out.size() + n <= 8 * 1024 * 1024); out.write(buffer, 0, n) }
+                out.toByteArray()
+            }
+        } finally { c.disconnect() }
+    }
 
     private fun request(url: String, token: String = "", body: String? = null): String {
         val c = URL(url).openConnection() as HttpURLConnection

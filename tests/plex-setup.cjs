@@ -91,7 +91,9 @@ const server = http.createServer((req, res) => {
       await page.screenshot({path:`build/plex-validation/plex-${viewport.width}.png`});
       await page.getByRole('button', {name:'DONE', exact:true}).click();
       await page.reload();
-      await page.evaluate(() => openSheet());
+      await page.evaluate(() => { if (S.mode === 'pocket') cardTo(true); });
+      await page.waitForFunction(() => !cardSettling());
+      await page.locator('#spine').click();
       await page.getByRole('button', {name:'Classical Home server'}).click();
       assert.match(await page.locator('.plexcard').innerText(), /Classical · Home server/);
       await page.getByRole('button', {name:'CHANGE SERVER OR LIBRARY'}).click();

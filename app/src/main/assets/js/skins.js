@@ -133,6 +133,7 @@ $('#cover .lcd .eq').innerHTML = '<i></i>'.repeat(16);
 let holdSkin = 0;
 function applySkin(){
   const k = SKINS[skinI];
+  if (N && N.plexAutoReverse) N.plexAutoReverse(k.id === 'digital');
   cover.dataset.skin = k.id; $('#inner').dataset.skin = k.id;
   const named = h => (h || '').replaceAll('PROPERTY OF HUGH', ownerTag());
   const html = d => named(typeof d === 'function' ? d() : d);

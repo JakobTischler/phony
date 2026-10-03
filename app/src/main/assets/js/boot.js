@@ -10,6 +10,7 @@ if (N && saved){
   else if (saved.kind === 'local' && N.hasAudioPermission()) chooseSource(saved, true);
 }
 if (N && S.src.kind === 'demo') $('#mixtitle').textContent = 'Tap here for music';
+restorePlexPlayback();
 // know the drawer's playlists from the start, so a playlist already playing in Spotify gets its tape
 if (N) try { readBox(); } catch (e) {}
 readRadio(); ensureBlank();

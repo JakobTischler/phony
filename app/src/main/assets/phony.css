@@ -421,6 +421,10 @@ body[data-mode=pocket] .foldstrip{padding-left:7vw;padding-right:7vw}
 .plexstatus:empty{display:none}
 .plexstatus{color:#91401c}
 .plexcard .skeys{flex-wrap:wrap;margin-top:0}
+.boxsources{display:flex;justify-content:center;gap:12px;padding:12px;flex-wrap:wrap}
+.boxsources button{border:1px solid #9a8c70;border-radius:4px;background:#ede3cb;color:#30281c;padding:10px 16px;font:600 14px var(--f-print);cursor:pointer}
+.boxsources button[aria-pressed=true]{background:#30281c;color:#f5eddb}
+.boxsources button:disabled{opacity:.5;cursor:default}
 
 /* a mixtape's J-card */
 .fp.mixfront canvas{position:absolute;inset:0;width:100%;height:100%}

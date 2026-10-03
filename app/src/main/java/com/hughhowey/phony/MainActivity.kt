@@ -49,6 +49,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var remote: RemoteWatcher
     private lateinit var box: SpotifyBox
     private lateinit var plex: com.hughhowey.phony.plex.PlexConnection
+    private lateinit var plexCatalog: com.hughhowey.phony.plex.PlexCatalog
     private lateinit var places: Places
     private lateinit var photos: Photos
     private lateinit var radio: Radio
@@ -93,8 +94,15 @@ class MainActivity : ComponentActivity() {
 
         library = Library(this)
         plex = com.hughhowey.phony.plex.PlexConnection(this,
-            { js("window.phonyPlexChanged && window.phonyPlexChanged()") },
+            {
+                if (::plexCatalog.isInitialized) plexCatalog.configure(plex.musicSelection())
+                js("window.phonyPlexChanged && window.phonyPlexChanged()")
+            },
             { url -> startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))) })
+        plexCatalog = com.hughhowey.phony.plex.PlexCatalog(this) {
+            js("window.phonyPlexCatalogChanged && window.phonyPlexCatalogChanged()")
+        }
+        plexCatalog.configure(plex.musicSelection())
         remote = RemoteWatcher(this)
         box = SpotifyBox(this, remote) {
             js("window.phonyBoxChanged && window.phonyBoxChanged()")
@@ -128,8 +136,11 @@ class MainActivity : ComponentActivity() {
             overScrollMode = View.OVER_SCROLL_NEVER
             isHapticFeedbackEnabled = false
             webViewClient = object : WebViewClient() {
-                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                    assets.shouldInterceptRequest(request.url)
+                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                    if (request.url.host == "appassets.androidplatform.net" && request.url.path?.startsWith("/plex-art/") == true)
+                        return plexCatalog.art(request.url.lastPathSegment.orEmpty())
+                    return assets.shouldInterceptRequest(request.url)
+                }
             }
             addJavascriptInterface(Bridge(), "PhonyNative")
         }
@@ -215,6 +226,7 @@ class MainActivity : ComponentActivity() {
         main.removeCallbacks(tick)
         box.release()
         plex.close()
+        plexCatalog.close()
         notes.stopped = true
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controller = null
@@ -230,6 +242,7 @@ class MainActivity : ComponentActivity() {
     private fun updateState() {
         val c = controller ?: return
         itemCount = c.mediaItemCount
+        com.hughhowey.phony.plex.PlexPlayback.state()?.let { stateJson = it; return }
         val dur = c.duration.let { if (it == C.TIME_UNSET || it < 0) 0L else it }
         val playing = c.isPlaying || (c.playWhenReady && c.playbackState == Player.STATE_BUFFERING)
         val ended = c.playbackState == Player.STATE_ENDED
@@ -254,6 +267,31 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface fun plexSelectServer(id: String) = onMain { plex.selectServer(id) }
         @JavascriptInterface fun plexSelectLibrary(id: String) = onMain { plex.selectLibrary(id) }
         @JavascriptInterface fun plexSignOut() = onMain { plex.signOut() }
+        @JavascriptInterface fun plexCatalog(): String = plexCatalog.status()
+        @JavascriptInterface fun plexAlbums(reset: Boolean) = onMain { plexCatalog.load(reset) }
+        @JavascriptInterface fun plexNow(): String = com.hughhowey.phony.plex.PlexPlayback.nowJson()
+        @JavascriptInterface fun plexAutoReverse(on: Boolean) = onMain { com.hughhowey.phony.plex.PlexPlayback.setAutoReverse(on) }
+        @JavascriptInterface fun plexFlip() = onMain { com.hughhowey.phony.plex.PlexPlayback.flip() }
+        @JavascriptInterface fun plexEndSide() = onMain { com.hughhowey.phony.plex.PlexPlayback.finishSide() }
+        @JavascriptInterface fun plexCancelPlayback() = onMain {
+            plexCatalog.cancelPlay()
+            com.hughhowey.phony.plex.PlexPlayback.clear()
+        }
+        @JavascriptInterface fun plexPlayAlbum(id: String, autoReverse: Boolean) = onMain {
+            controller?.pause()
+            plexCatalog.play(id) { album, tracks, endpoint, failure ->
+                var message = failure
+                var result = ""
+                if (album != null && endpoint != null) try {
+                    remote.enabled = false
+                    NowLoaded.key = ""
+                    NowLoaded.tracks = null
+                    result = com.hughhowey.phony.plex.PlexPlayback.start(album, tracks, endpoint, autoReverse)
+                    updateState()
+                } catch (_: Exception) { message = "The player is not ready. Please try loading the album again." }
+                js("window.phonyPlexAlbum && window.phonyPlexAlbum(${org.json.JSONObject.quote(result)}, ${org.json.JSONObject.quote(message)})")
+            }
+        }
 
         // ----- songs saved on the phone -----
         @JavascriptInterface fun hasAudioPermission(): Boolean = library.hasPermission()
@@ -272,6 +310,8 @@ class MainActivity : ComponentActivity() {
             NowLoaded.tracks = tracks
             val items = tracks.map { it.toMediaItem() }
             onMain {
+                plexCatalog.cancelPlay()
+                com.hughhowey.phony.plex.PlexPlayback.clear()
                 controller?.run {
                     setMediaItems(items)
                     prepare()
@@ -337,7 +377,11 @@ class MainActivity : ComponentActivity() {
 
         @JavascriptInterface fun useRemote(on: Boolean) {
             remote.enabled = on
-            if (on) onMain { controller?.pause() }
+            if (on) onMain {
+                plexCatalog.cancelPlay()
+                com.hughhowey.phony.plex.PlexPlayback.clear()
+                controller?.pause()
+            }
         }
 
         @JavascriptInterface fun getRemote(): String = remote.json

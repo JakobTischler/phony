@@ -21,6 +21,7 @@ function toPlain(){ S.playlist = plainPl(); swapTo(PL_TAPE, true, true); }
 function tapeAt(i){ return i === PL_TAPE ? DESIGNS[plLook(S.playlist || plainPl()).d] : TAPES[i]; }
 const audio = new Audio(); audio.preload = 'auto'; audio.preservesPitch = false; audio.webkitPreservesPitch = false;
 const isRemote = () => S.src.kind === 'remote', isLocal = () => S.src.kind === 'local';
+const isPlex = () => S.src.kind === 'plex', isNative = () => isLocal() || isPlex();
 const dur = i => (S.tracks[i] && S.tracks[i].dur) || 210;
 /* ---------- sides: an album plays like a real cassette. Side A is the first half of the
    songs (the J-card splits them the same way); at the end of it the tape stops and you flip it.
@@ -46,10 +47,12 @@ function endSideA(){
     // auto reverse: a clunk, the reels change direction, and Side B plays
     sfx('latch'); S.side = 'B'; S.flipped = false; refreshShells(); tapeChanged(); toSideB(); return;
   }
+  if (isPlex()) N.plexEndSide();
   pause(); S.cue = 0; S.sideEnd = true; S.t = dur(S.idx); sfx('pop'); syncKeys(); trackChanged();
 }
 // ■ at the end of Side A: out it comes, over, and back in
 function flipTape(){
+  if (isPlex()){ S.cmdAt = performance.now(); N.plexFlip(); }
   S.sideEnd = false; S.flipped = true; S.ejected = true; sfx('eject'); syncKeys();
   setTimeout(() => { S.side = 'B'; S.dispP = 0; refreshShells(); tapeChanged(); S.ejected = false; sfx('insert'); }, 520);
 }
@@ -111,20 +114,21 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = fals
 
 /* ---------- transport ---------- */
 function loadTrack(i, keepPlaying){
+  if (isPlex()){ S.sideEnd = false; S.flipped = false; S.cmdAt = performance.now(); }
   S.idx = Math.max(0, Math.min(S.tracks.length - 1, i)); S.t = 0;
-  if (isLocal()){ N.skipTo(S.idx); }
+  if (isNative()){ N.skipTo(S.idx); }
   else if (S.src.kind === 'files'){ audio.src = S.tracks[S.idx].url; audio.currentTime = 0; if (keepPlaying && S.playing) audio.play().catch(() => {}); }
   trackChanged();
 }
 function play(){
   if (S.ejected) return; S.playing = true; S.startAt = performance.now(); S.cmdAt = performance.now();
-  if (isLocal()) N.play();
+  if (isNative()) N.play();
   else if (isRemote()) N.remoteCmd('play', '');
   else if (S.src.kind === 'files'){ if (!audio.src) loadTrack(S.idx); audio.play().catch(() => {}); }
 }
 function pause(){
   S.playing = false; S.cmdAt = performance.now();
-  if (isLocal()) N.pause();
+  if (isNative()) N.pause();
   else if (isRemote()) N.remoteCmd('pause', '');
   else if (S.src.kind === 'files') audio.pause();
 }
@@ -138,13 +142,14 @@ function prev(){
   S.mixEnd = false;
   if (S.sideEnd || S.flipped) unEnd();
   if (isRemote()){ N.remoteCmd('prev', ''); return; }
-  if (S.t > 3){ S.t = 0; if (isLocal()) N.seekTo(0); else if (S.src.kind === 'files') audio.currentTime = 0; }
+  if (S.t > 3){ S.t = 0; if (isNative()) N.seekTo(0); else if (S.src.kind === 'files') audio.currentTime = 0; }
   else loadTrack(S.idx - 1, true);
 }
 function endOfSide(){ pause(); S.cue = 0; S.idx = S.tracks.length - 1; S.t = dur(S.idx); sfx('pop'); syncKeys(); }
 audio.addEventListener('ended', () => next());
 
 function eject(){
+  if (typeof pendingPlexAlbum !== 'undefined' && pendingPlexAlbum){ pendingPlexAlbum = null; N.plexCancelPlayback(); }
   // a full blank comes out to be named
   if (S.mix && S.mix === BLANK && S.mix.full && !S.rec){ pause(); S.ejected = true; sfx('eject'); syncKeys(); const m = S.mix; setTimeout(() => openNamer(m), 450); return; }
   pause(); S.ejected = true; sfx('eject'); syncKeys();
@@ -413,8 +418,9 @@ let pollAt = 0, remoteMissing = 0, ctxAt = 0;
 const sameName = (a, b) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
 function pollNative(now){
   if (!N || now - pollAt < 33) return; pollAt = now;
-  if (isLocal()){
+  if (isNative()){
     let st; try { st = JSON.parse(N.getState()); } catch (e) { return; }
+    if (isPlex() && !syncPlexState(st)) return;
     if (st.index >= 0 && st.index < S.tracks.length && st.index !== S.idx){ S.idx = st.index; trackChanged(); }
     if (!S.cue) S.t = st.pos / 1000;
     const tr = S.tracks[S.idx]; if (tr && st.dur > 0 && Math.abs((tr.dur || 0) - st.dur / 1000) > 1){ tr.dur = st.dur / 1000; }
@@ -540,6 +546,7 @@ function albumUriFor(album){
 }
 
 function chooseSource(src, restoring, keepTape){
+  if (N && N.plexCancelPlayback){ N.plexCancelPlayback(); pendingPlexAlbum = null; }
   if (!restoring){ pause(); syncKeys(); } S.cue = 0; newTape();
   S.r = {key:'', cur:null, hist:[], done:0, artKey:'', queue:[]};
   S.albumMode = false; S.playlist = null; S.mix = null; S.rec = null;
@@ -698,7 +705,7 @@ function loop(now){
     const ck = S.cueK || 9;
     S.t += S.cue * ck * dt;
     if (S.src.kind === 'files'){ const nt = audio.currentTime + S.cue * ck * dt; if (nt >= 0 && nt < (audio.duration || 1e9)) audio.currentTime = nt; S.t = audio.currentTime; }
-    else if (isLocal() && now - cueSeekAt > 120){ cueSeekAt = now; N.seekTo(Math.max(0, Math.round(S.t * 1000))); }
+    else if (isNative() && now - cueSeekAt > 120){ cueSeekAt = now; N.seekTo(Math.max(0, Math.round(S.t * 1000))); }
     if (isRemote()) S.t = Math.max(0, Math.min(S.t, dur(S.idx) - 1));
   } else if (S.playing && !S.ejected){
     if (S.src.kind === 'demo') S.t += dt * S.motor; else if (S.src.kind === 'files') S.t = audio.currentTime || 0;
@@ -709,12 +716,12 @@ function loop(now){
     if (S.playing && !S.ejected && S.rec.seen && d > 20 && S.t >= d - 1.2) finishRec();
   }
   const atEnd = S.sideEnd || S.flipped || !!S.rec;
-  if (!atEnd && sidesOn() && S.side === 'A' && S.idx === half() - 1 && S.playing && !S.cue && !S.ejected && (isRemote() || isLocal()) && S.t >= dur(S.idx) - .7 && dur(S.idx) > 5) endSideA();
-  if (!atEnd && (S.src.kind === 'demo' || S.src.kind === 'files' || (isLocal() && S.cue))){
+  if (!atEnd && !isPlex() && sidesOn() && S.side === 'A' && S.idx === half() - 1 && S.playing && !S.cue && !S.ejected && (isRemote() || isNative()) && S.t >= dur(S.idx) - .7 && dur(S.idx) > 5) endSideA();
+  if (!atEnd && (S.src.kind === 'demo' || S.src.kind === 'files' || (isNative() && S.cue))){
     // the tape runs out at the end of Side A, even while winding
     if (S.t >= dur(S.idx) && sidesOn() && S.side === 'A' && S.idx === half() - 1){ S.cue = 0; endSideA(); }
     else if (S.t >= dur(S.idx)){ if (S.idx < S.tracks.length - 1){ S.idx++; S.t = 0; if (S.src.kind !== 'demo') loadTrack(S.idx, true); else trackChanged(); } else endOfSide(); }
-    else if (S.t < 0){ if (S.idx > 0){ S.idx--; S.t = dur(S.idx) - .1; if (S.src.kind !== 'demo'){ loadTrack(S.idx, true); if (isLocal()) N.seekTo(Math.round(S.t * 1000)); else audio.currentTime = S.t; } else trackChanged(); } else { S.t = 0; S.cue = 0; } }
+    else if (S.t < 0){ if (S.idx > 0){ S.idx--; S.t = dur(S.idx) - .1; if (S.src.kind !== 'demo'){ loadTrack(S.idx, true); if (isNative()) N.seekTo(Math.round(S.t * 1000)); else audio.currentTime = S.t; } else trackChanged(); } else { S.t = 0; S.cue = 0; } }
   }
   const L = sideLen(), pp = Math.max(0, Math.min(1, posSec() / L)), p = sidesOn() && S.side === 'B' && autoReverse() ? 1 - pp : (S.sideEnd ? 1 : pp);
   // winding is quick but visible: never longer than about 2.5 s for a whole side
@@ -729,11 +736,11 @@ function loop(now){
     windBP.frequency.setTargetAtTime(500 + mult * 110, t, .05);
     hissGain.gain.setTargetAtTime(S.fx && S.playing && !S.ejected ? .016 : 0, t, .05);
   }
-  if (now - rateTick > (isLocal() ? 400 : 150) && S.fx && S.playing && !S.cue){
+  if (now - rateTick > (isNative() ? 400 : 150) && S.fx && S.playing && !S.cue){
     rateTick = now;
     const ramp = Math.min(1, .92 + (now - S.startAt) / 3000);
     const rate = ramp * (1 + .0025 * Math.sin(now / 1000 * TAU * .55));
-    if (isLocal()) N.setSpeed(rate);
+    if (isNative()) N.setSpeed(rate);
     else if (S.src.kind === 'files') audio.playbackRate = rate;
   }
   if (S.src.kind === 'files') audio.volume = S.cue ? .35 : 1;

@@ -25,11 +25,13 @@ Download it on the phone and open it to install (Android asks once to allow inst
 
 Spotify lets a development-mode app serve five accounts, and signs you out after six months; when that happens the note in the box says so and a tap signs you back in.
 
-## Plex (connection setup)
+## Plex
 
 This fork adds Plex sign-in and server/music-library selection in the J-card's
-music chooser. The selection is saved for the next launch. Plex browsing and
-playback are not included yet. See [Plex setup](docs/plex-setup.md) for details.
+music chooser. Choose **Browse Plex albums** to fill the cassette box with your
+library, then open a case to play its album directly from your server. The box's
+**PLEX / SPOTIFY** buttons switch collections. See [Plex setup](docs/plex-setup.md)
+for connection requirements and the current playback scope.
 
 ## Shells
 
